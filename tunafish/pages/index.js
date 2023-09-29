@@ -1,21 +1,23 @@
 import Head from 'next/head';
+import axios from "axios";
 import { useState, useEffect } from 'react';
-import { H1, Body } from '@leafygreen-ui/typography';
+import { H1, H2, H3, Subtitle, Description, Body, InlineCode, Label } from '@leafygreen-ui/typography';
 import { MongoDBLogoMark } from '@leafygreen-ui/logo';
-import { Button } from '@leafygreen-ui/button'
 import { SearchInput, SearchResult, SearchResultGroup } from '@leafygreen-ui/search-input';
 import { Combobox, ComboboxOption } from '@leafygreen-ui/combobox';
+import Card from '@leafygreen-ui/card';
 
 function Home() {
   // use state to store fields
   const [fields, setFields] = useState(null);
-  const [selectedField, setSelectedField] = useState("");
+  // const [selectedField, setSelectedField] = useState("");
+  const [queryTerms, setQueryTerms] = useState(null);
 
   // use state to store field weights
   const [weights, setWeights] = useState({});
 
-  const [query, setQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
+  // const [query, setQuery] = useState('');
+  const [searchResponse, setSearchResponse] = useState({});
 
   // Fetch field data on component mount
   useEffect(() => {
@@ -32,13 +34,12 @@ function Home() {
   };
 
   const handleFieldToggle = (value) => {
-    // const field = event.target.value;
     const fields = value;
     const newWeights = {};
     console.log(fields);
     if (fields.length >0){
       fields.forEach((field) => {
-        newWeights[field] = 50;
+        newWeights[field] = 0;
       });
       setWeights(newWeights);
     }else{
@@ -47,15 +48,18 @@ function Home() {
   };
 
   const handleQueryChange = (event) => {
-    setQuery(event.target.value);
-  };
-
-  const handleSearch = () => {
-    // make search request to your engine
-    dummySearchRequest(query, weights)
-      .then(setSearchResults)
+    const query = event.target.value;
+    setQueryTerms(query);
+    searchRequest(query, weights)
+      .then(setSearchResponse)
       .catch(console.error);
   };
+
+  const handlSearchClick = () => {
+    searchRequest(queryTerms, weights)
+      .then(setSearchResponse)
+      .catch(console.error);
+  }
 
   // Render loading state if fields is null
   if (fields === null) {
@@ -71,51 +75,94 @@ function Home() {
       <H1><MongoDBLogoMark/>Atlas Search Query Tuner</H1>
       <hr/>
       <div style={{width:"30%",float:"left"}}>
-        <Combobox label="Choose Fields" multiselect={true} onChange={handleFieldToggle}>
-          {fields.map(field => (
-            <ComboboxOption key={field} value={field}/>
-          ))}
-        </Combobox>
-        <div>
+        <div style={{width:"80%"}}>
+          <Combobox label="Choose Fields to Weight" multiselect={true} onChange={handleFieldToggle} size="small">
+            {fields.map(field => (
+              <ComboboxOption key={field} value={field}/>
+            ))}
+          </Combobox>
+        </div>
+        <div style={{paddingTop:"2%"}}>
           {Object.keys(weights).map(field => (
-            <label key={field}>
-              {field}
-              <input 
-                type="range"
-                min="1"
-                max="100"
-                value={weights[field] || 50} 
-                onChange={(e) => handleSliderChange(field, e.target.value)}
-              />
-            </label>
+            <p>
+              <Label key={field}>
+                {field}
+                <input
+                  type="range"
+                  min="-10"
+                  max="10"
+                  value={weights[field] || 0} 
+                  onChange={(e) => handleSliderChange(field, e.target.value)}
+                />
+                <input
+                  style={{width:"2lvh"}}
+                  type="text"
+                  value={weights[field] || 0} 
+                  onChange={(e) => handleSliderChange(field, e.target.value)}
+                />
+              </Label>
+            </p>
+            // <NumberInput key={field} value={weights[field].toString() || '0'} onChange={(e) => handleSliderChange(field, e.target.value)} size="small"/>
           ))}
         </div>
+        <button onClick={handlSearchClick}>Search</button>
       </div>
       <div style={{width:"70%", float:"right"}}>
         <div>
-          <label>
-            Query:
-            <input type="text" value={query} onChange={handleQueryChange} />
-          </label>
-          <button onClick={handleSearch}>Search</button>
-        </div>
-        <div>
-          Results: 
-          <pre>
-            {JSON.stringify(searchResults, null, 2)}
-          </pre>
+          <SearchInput
+            onChange={handleQueryChange}
+            aria-label="some label"
+          ></SearchInput>
+          {searchResponse.data?.map(result=>(
+            // <Card as="article">
+              <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+                <Subtitle>{result.title}</Subtitle>
+                <InlineCode>Score: <em>{result.score}</em></InlineCode>
+                <Description weight="regular">{result.plot}</Description>
+                <div>
+                  <div style={{width:"33%", float:"left"}}>
+                    <Label>
+                      Cast
+                      {result.cast?.map(member=>(
+                        <Body>{member}</Body>
+                      ))}
+                    </Label>
+                  </div>
+                  <div style={{width:"33%", float:"left"}}>
+                    <Label>
+                      Genres
+                      {result.genres?.map(genre=>(
+                        <Body>{genre}</Body>
+                      ))}
+                    </Label>
+                  </div>
+                  <div style={{width:"33%", float:"left"}}>
+                    <Label>
+                      Year
+                      <Body>{result.year}</Body>
+                    </Label>
+                  </div>
+
+                </div>
+              </SearchResult>
+            // </Card>
+          ))}
         </div>
       </div>
     </>
   )
 }
  
-// Dummy function that mimicks async API call 
-// Replace this with the actual function when the API is set up.
-function dummySearchRequest(query, weights) {
+
+function searchRequest(query, weights) {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(`Search results for "${query}" with weights ${JSON.stringify(weights)}.`);
+      resolve(
+        axios.post(
+          `https://eu-west-2.aws.data.mongodb-api.com/app/querytuner-kysxq/endpoint/search?terms=${query}`,
+          {'weights':weights}
+        )
+      );
     }, 1000);
   });
 }
@@ -124,7 +171,7 @@ function dummySearchRequest(query, weights) {
 function fetchFieldData() {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(['field1', 'field2', 'field3']);
+      resolve(['title', 'plot', 'genres']);
     }, 1000);
   });
 }
