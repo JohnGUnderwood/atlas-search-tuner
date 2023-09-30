@@ -13,11 +13,17 @@
     "@leafygreen-ui/menu": "^22.0.8",
     "@leafygreen-ui/search-input": "^2.1.1",
     "@leafygreen-ui/typography": "^17.0.1",
+    "axios": "^1.5.1",
+    "mongodb": "6.1",
     "next": "latest",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.23",
+    "typescript": "5.2.2"
   }
 }

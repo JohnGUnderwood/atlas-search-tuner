@@ -1,11 +1,10 @@
 import Head from 'next/head';
-import axios from "axios";
+import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { H1, H2, H3, Subtitle, Description, Body, InlineCode, Label } from '@leafygreen-ui/typography';
 import { MongoDBLogoMark } from '@leafygreen-ui/logo';
 import { SearchInput, SearchResult, SearchResultGroup } from '@leafygreen-ui/search-input';
-import { Combobox, ComboboxOption } from '@leafygreen-ui/combobox';
-import Card from '@leafygreen-ui/card';
+import { Combobox, ComboboxGroup, ComboboxOption } from '@leafygreen-ui/combobox';
 
 function Home() {
   // use state to store fields
@@ -22,7 +21,7 @@ function Home() {
   // Fetch field data on component mount
   useEffect(() => {
     fetchFieldData()
-      .then(data => setFields(data))
+      .then(resp => setFields(resp.data))
       .catch(console.error);
   }, []);
  
@@ -77,8 +76,12 @@ function Home() {
       <div style={{width:"30%",float:"left"}}>
         <div style={{width:"80%"}}>
           <Combobox label="Choose Fields to Weight" multiselect={true} onChange={handleFieldToggle} size="small">
-            {fields.map(field => (
-              <ComboboxOption key={field} value={field}/>
+            {Object.keys(fields).map(fieldType => (
+              <ComboboxGroup key={fieldType} label={fieldType}>
+                {fields[fieldType].map(field => (
+                  <ComboboxOption key={fieldType+'_'+field} value={field}/>
+                ))}
+              </ComboboxGroup>
             ))}
           </Combobox>
         </div>
@@ -102,7 +105,6 @@ function Home() {
                 />
               </Label>
             </p>
-            // <NumberInput key={field} value={weights[field].toString() || '0'} onChange={(e) => handleSliderChange(field, e.target.value)} size="small"/>
           ))}
         </div>
         <button onClick={handlSearchClick}>Search</button>
@@ -114,38 +116,36 @@ function Home() {
             aria-label="some label"
           ></SearchInput>
           {searchResponse.data?.map(result=>(
-            // <Card as="article">
-              <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
-                <Subtitle>{result.title}</Subtitle>
-                <InlineCode>Score: <em>{result.score}</em></InlineCode>
-                <Description weight="regular">{result.plot}</Description>
-                <div>
-                  <div style={{width:"33%", float:"left"}}>
-                    <Label>
-                      Cast
-                      {result.cast?.map(member=>(
-                        <Body>{member}</Body>
-                      ))}
-                    </Label>
-                  </div>
-                  <div style={{width:"33%", float:"left"}}>
-                    <Label>
-                      Genres
-                      {result.genres?.map(genre=>(
-                        <Body>{genre}</Body>
-                      ))}
-                    </Label>
-                  </div>
-                  <div style={{width:"33%", float:"left"}}>
-                    <Label>
-                      Year
-                      <Body>{result.year}</Body>
-                    </Label>
-                  </div>
-
+            <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+              <Subtitle>{result.title}</Subtitle>
+              <InlineCode>Score: <em>{result.score}</em></InlineCode>
+              <Description weight="regular">{result.plot}</Description>
+              <div>
+                <div style={{width:"33%", float:"left"}}>
+                  <Label>
+                    Cast
+                    {result.cast?.map(member=>(
+                      <Body>{member}</Body>
+                    ))}
+                  </Label>
                 </div>
-              </SearchResult>
-            // </Card>
+                <div style={{width:"33%", float:"left"}}>
+                  <Label>
+                    Genres
+                    {result.genres?.map(genre=>(
+                      <Body>{genre}</Body>
+                    ))}
+                  </Label>
+                </div>
+                <div style={{width:"33%", float:"left"}}>
+                  <Label>
+                    Year
+                    <Body>{result.year}</Body>
+                  </Label>
+                </div>
+
+              </div>
+            </SearchResult>
           ))}
         </div>
       </div>
@@ -155,6 +155,8 @@ function Home() {
  
 
 function searchRequest(query, weights) {
+
+
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(
@@ -171,7 +173,8 @@ function searchRequest(query, weights) {
 function fetchFieldData() {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(['title', 'plot', 'genres']);
+      resolve(axios.get('api/search/fields?index=default&type=string&type=autocomplete'));
+      // resolve(['title', 'plot', 'genres']);
     }, 1000);
   });
 }
