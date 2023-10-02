@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import axios from 'axios';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { H1, H2, H3, Subtitle, Description, Body, InlineCode, Label } from '@leafygreen-ui/typography';
 import { MongoDBLogoMark } from '@leafygreen-ui/logo';
 import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
@@ -9,14 +9,13 @@ import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import TextInput from '@leafygreen-ui/text-input';
 import SearchResultFields from '../components/fields';
-import SaveQuery from '../components/saveQuery';
+import SaveQuery from '../components/save-query';
+import SelectFieldWeights from '../components/field-weights';
 
 function Home() {
   const [loading, setLoading] = useState(false);
   // use state to store fields
   const [connection, setConnection] = useState("");
-  const [user, setUser] = useState("");
-  const [password, setPassword] = useState("");
   const [database, setDatabase] = useState("");
   const [collection, setCollection] = useState("");
   const [searchIndex, setIndex] = useState("default");
@@ -30,56 +29,6 @@ function Home() {
   // const [query, setQuery] = useState('');
   const [searchResponse, setSearchResponse] = useState({});
  
-  const handleSliderChange = (weight, newValue) => {
-    const [type,field] = weight;
-    var typeWeights = weights[type];
-    typeWeights[field] = newValue
-    setWeights(weights => ({
-      ...weights,
-      [type]: typeWeights
-    }));
-  };
-
-  const handleFieldToggle = (value) => {
-    const fields = value;
-    var newWeights = {};
-    if (fields.length >0){
-      fields.forEach((field) => {
-        const ftype = field.split('_')[0];
-        // Fieldname might have '_' in it
-        const fname = field.split('_').slice(1).join('_');
-        if(weights[ftype]){
-          if(weights[ftype][fname]){
-            if(ftype in newWeights){
-              newWeights[ftype][fname] = weights[ftype][fname];
-            }else{
-              newWeights[ftype] = {};
-              newWeights[ftype][fname] = weights[ftype][fname];
-            }
-          }else{
-            if(ftype in newWeights){
-              newWeights[ftype][fname] = 0;
-            }else{
-              newWeights[ftype] = {};
-              newWeights[ftype][fname] = 0;
-            }
-          }
-        }else{
-          if(ftype in newWeights){
-            newWeights[ftype][fname] = 0;
-          }else{
-            newWeights[ftype] = {};
-            newWeights[ftype][fname] = 0;
-          }
-        }
-
-      });
-      setWeights(newWeights);
-    }else{
-      setWeights(newWeights);
-    }
-  };
-
   const handleQueryChange = (event) => {
     const query = event.target.value;
     setQueryTerms(query);
@@ -120,8 +69,6 @@ function Home() {
           <table>
             <tbody>
               <tr>
-                {/* <td><TextInput label="User" value={user} onChange={(e)=>setUser(e.target.value)}></TextInput></td> */}
-                {/* <td><TextInput label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)}></TextInput></td> */}
                 <td><TextInput label="Database" value={database} onChange={(e)=>setDatabase(e.target.value)}></TextInput></td>
                 <td><TextInput label="Collection" value={collection} onChange={(e)=>setCollection(e.target.value)}></TextInput></td>
                 <td><TextInput label="Search Index" value={searchIndex} onChange={(e)=>setIndex(e.target.value)}></TextInput></td>
@@ -137,47 +84,7 @@ function Home() {
       {fields?
         <div>
         <div style={{width:"30%",float:"left"}}>
-          <div style={{width:"80%"}}>
-            <Combobox label="Choose Fields to Weight" size="small" multiselect={true} onChange={handleFieldToggle}>
-              {Object.keys(fields).map(fieldType => (
-                <ComboboxGroup key={fieldType} label={fieldType}>
-                  {fields[fieldType].map(field => (
-                    <ComboboxOption key={fieldType+'_'+field} value={fieldType+'_'+field} displayName={field}/>
-                  ))}
-                </ComboboxGroup>
-              ))}
-            </Combobox>
-          </div>
-          <div style={{paddingTop:"2%"}}>
-            {Object.keys(weights).map(type => (
-              <div key={type}>
-                <Subtitle>{type} fields</Subtitle>
-                {Object.keys(weights[type]).map(field => (
-                  <div key={type+'_'+field}>
-                    <Label>
-                      {field}
-                      <input
-                        key={type+'_'+field+'_slider'}
-                        style={{verticalAlign:"bottom"}}
-                        type="range"
-                        min="-10"
-                        max="10"
-                        value={weights[type][field] || 0} 
-                        onChange={(e) => handleSliderChange([type,field], e.target.value)}
-                      />
-                      <input
-                        key={type+'_'+field+'_box'}
-                        style={{width:"2lvh"}}
-                        type="text"
-                        value={weights[type][field] || 0} 
-                        onChange={(e) => handleSliderChange([type,field], e.target.value)}
-                      />
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
           <br/>
           <Button onClick={handleSearchClick}>Search</Button>
           {searchResponse.query?
