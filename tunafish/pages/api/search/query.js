@@ -92,6 +92,7 @@ export default function handler(req, res) {
         res.status(400).json({error:"Missing Connection Details!"})
     }
 
+    const index = req.query.index? req.query.index : "default" ;
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
     
@@ -102,6 +103,10 @@ export default function handler(req, res) {
     // });
   
     const query = buildQuery(terms,weights);
+    var searchStage = query.searchStage;
+
+
+    searchStage['$search']['index'] = index;
 
     // connect to your Atlas deployment
     const uri =  req.query.conn;
@@ -116,17 +121,22 @@ export default function handler(req, res) {
         try{
             const results = await collection.aggregate(
                 [
-                    query.searchStage,
+                    searchStage,
                     {
-                        $project:{
-                            title:1,
-                            plot:1,
-                            genres:1,
-                            year:1,
-                            cast:1,
+                        $addFields:{
                             score: { $round : [ {$meta:"searchScore"}, 2 ] }
                         }
                     },
+                    // {
+                    //     $project:{
+                    //         title:1,
+                    //         plot:1,
+                    //         genres:1,
+                    //         year:1,
+                    //         cast:1,
+                            
+                    //     }
+                    // },
                     {
                         $limit:5
                     }

@@ -17,6 +17,7 @@ function Home() {
   const [password, setPassword] = useState("");
   const [database, setDatabase] = useState("");
   const [collection, setCollection] = useState("");
+  const [searchIndex, setIndex] = useState("default");
 
   const [fields, setFields] = useState(null);
   const [queryTerms, setQueryTerms] = useState(null);
@@ -87,20 +88,20 @@ function Home() {
   const handleQueryChange = (event) => {
     const query = event.target.value;
     setQueryTerms(query);
-    searchRequest(query, weights, connection, database, collection)
+    searchRequest(query, weights, connection, database, collection, searchIndex)
       .then(resp => setSearchResponse(resp.data))
       .catch(console.error);
   };
 
   const handleSearchClick = () => {
-    searchRequest(queryTerms, weights, connection, database, collection)
+    searchRequest(queryTerms, weights, connection, database, collection, searchIndex)
       .then(resp => setSearchResponse(resp.data))
       .catch(console.error);
   }
 
   const handleSubmit = () => {
     setLoading(true);
-    fetchFieldData(connection,database,collection)
+    fetchFieldData(connection,database,collection,searchIndex)
       .then(resp => {setFields(resp.data);setLoading(false);})
       .catch(console.error);
   }
@@ -128,6 +129,7 @@ function Home() {
                 {/* <td><TextInput label="Password" type="password" value={password} onChange={(e)=>setPassword(e.target.value)}></TextInput></td> */}
                 <td><TextInput label="Database" value={database} onChange={(e)=>setDatabase(e.target.value)}></TextInput></td>
                 <td><TextInput label="Collection" value={collection} onChange={(e)=>setCollection(e.target.value)}></TextInput></td>
+                <td><TextInput label="Search Index" value={searchIndex} onChange={(e)=>setIndex(e.target.value)}></TextInput></td>
               </tr>
             </tbody>
           </table>
@@ -206,35 +208,59 @@ function Home() {
               aria-label="some label"
             ></SearchInput>
             {searchResponse.results?.map(result=>(
-              <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
-                <Subtitle>{result.title}</Subtitle>
-                <InlineCode>Score: <em>{result.score}</em></InlineCode>
-                <Description weight="regular">{result.plot}</Description>
-                <div>
-                  <div style={{width:"33%", float:"left"}}>
-                    <Label>
-                      Cast
-                      {result.cast?.map(member=>(
-                        <Body>{member}</Body>
-                      ))}
-                    </Label>
-                  </div>
-                  <div style={{width:"33%", float:"left"}}>
-                    <Label>
-                      Genres
-                      {result.genres?.map(genre=>(
-                        <Body>{genre}</Body>
-                      ))}
-                    </Label>
-                  </div>
-                  <div style={{width:"33%", float:"left"}}>
-                    <Label>
-                      Year
-                      <Body>{result.year}</Body>
-                    </Label>
-                  </div>
+              // <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+              //   <Subtitle>{result.title}</Subtitle>
+              //   <InlineCode>Score: <em>{result.score}</em></InlineCode>
+              //   <Description weight="regular">{result.plot}</Description>
+              //   <div>
+              //     <div style={{width:"33%", float:"left"}}>
+              //       <Label>
+              //         Cast
+              //         {result.cast?.map(member=>(
+              //           <Body>{member}</Body>
+              //         ))}
+              //       </Label>
+              //     </div>
+              //     <div style={{width:"33%", float:"left"}}>
+              //       <Label>
+              //         Genres
+              //         {result.genres?.map(genre=>(
+              //           <Body>{genre}</Body>
+              //         ))}
+              //       </Label>
+              //     </div>
+              //     <div style={{width:"33%", float:"left"}}>
+              //       <Label>
+              //         Year
+              //         <Body>{result.year}</Body>
+              //       </Label>
+              //     </div>
 
-                </div>
+              //   </div>
+              // </SearchResult>
+              <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+                {
+                  Object.keys(result).map(attr=>(
+                    <Label>
+                      {attr}
+                      {typeof result[attr] === 'object'? 
+                        Array.isArray(result[attr]) ? 
+                          result[attr].reduce((display, item, index)=>{
+                            if(index < 4){
+                              display.push(<Body>{item}</Body>)
+                            }else if(index == 5){
+                              display.push(<Body>{item} ... ({result[attr].length-5} more)</Body>)
+                            } 
+                            return display
+                          },[])
+                          :
+                          <Body>{JSON.stringify(result[attr])}</Body>
+                        :
+                        <Body>{result[attr]}</Body>
+                      }
+                    </Label>
+                  ))
+                }
               </SearchResult>
             ))}
             {
@@ -255,11 +281,11 @@ function Home() {
 }
  
 
-function searchRequest(query, weights, conn, db, coll) {
+function searchRequest(query, weights, conn, db, coll, index) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(
-        axios.post(`api/search/query?terms=${query}&conn=${encodeURIComponent(conn)}&db=${db}&coll=${coll}`,
+        axios.post(`api/search/query?terms=${query}&conn=${encodeURIComponent(conn)}&db=${db}&coll=${coll}&index=${index}`,
           { weights : weights},
           { headers : 'Content-Type: application/json'}
         )
@@ -269,11 +295,11 @@ function searchRequest(query, weights, conn, db, coll) {
 }
 
 // Dummy function to mimic fetching field data
-function fetchFieldData(conn,db,coll) {
+function fetchFieldData(conn,db,coll,index) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(
-        axios.get(`api/search/fields?index=default&type=string&type=autocomplete&conn=${encodeURIComponent(conn)}&db=${db}&coll=${coll}`)
+        axios.get(`api/search/fields?index=${index}&type=string&type=autocomplete&conn=${encodeURIComponent(conn)}&db=${db}&coll=${coll}`)
       );
     }, 1000);
   });
