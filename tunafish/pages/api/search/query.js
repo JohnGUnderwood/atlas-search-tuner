@@ -109,7 +109,7 @@ function buildProjection(weights){
 export default function handler(req, res) {
 
     if(!req.query.conn || !req.query.coll || !req.query.db){
-        res.status(400).json({error:"Missing Connection Details!"})
+        return res.status(400).json({error:"Missing Connection Details!"})
     }
 
     const index = req.query.index? req.query.index : "default" ;
@@ -149,9 +149,9 @@ export default function handler(req, res) {
                     }
                 ]
             ).toArray();
-            res.status(200).json({results:results,query:query});
+            return res.status(200).json({results:results,query:query});
         }catch (error){
-            res.status(400).json({'error':error,query:query})
+            return res.status(400).json({'error':error,query:query})
         }
       } finally {
         await client.close();

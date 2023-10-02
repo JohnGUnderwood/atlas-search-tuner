@@ -45,7 +45,7 @@ export default function handler(req, res) {
   // res.status(200).json({ message: 'Hello from Next.js!' })
 
   if(!req.query.conn || !req.query.coll || !req.query.db){
-    res.status(400).json({error:"Missing Connection Details!"})
+    return res.status(400).json({error:"Missing Connection Details!"})
   }
 
   const indexName = ( ('index' in req.query)? req.query.index : "default");
@@ -65,13 +65,13 @@ export default function handler(req, res) {
       const types = parseIndex(indexDef);
       
       if(fieldTypes[0] == undefined){
-        res.status(200).json(types)
+        return res.status(200).json(types)
       }else{
         var result = {};
         fieldTypes.forEach((type)=>{
           result[type]=types[type];
         });
-        res.status(200).json(result);
+        return res.status(200).json(result);
       }
     } finally {
       await client.close();

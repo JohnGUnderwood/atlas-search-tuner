@@ -9,6 +9,7 @@ import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import TextInput from '@leafygreen-ui/text-input';
 import SearchResultFields from '../components/fields';
+import SaveQuery from '../components/saveQuery';
 
 function Home() {
   const [loading, setLoading] = useState(false);
@@ -28,13 +29,6 @@ function Home() {
 
   // const [query, setQuery] = useState('');
   const [searchResponse, setSearchResponse] = useState({});
-
-  // Fetch field data on component mount
-  useEffect(() => {
-    // fetchFieldData()
-    //   .then(resp => setFields(resp.data))
-    //   .catch(console.error);
-  }, []);
  
   const handleSliderChange = (weight, newValue) => {
     const [type,field] = weight;
@@ -194,10 +188,14 @@ function Home() {
                 searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
                 : <></>
               }
-              <br/>
-              <InlineCode>
-                {JSON.stringify(searchResponse.query.searchStage)}
-              </InlineCode>
+              <p>
+                <InlineCode>
+                  {JSON.stringify(searchResponse.query.searchStage)}
+                </InlineCode>
+              </p>
+              <p>
+                <SaveQuery query={searchResponse.query.searchStage}></SaveQuery>
+              </p>
             </div>
             : <></>
           }
