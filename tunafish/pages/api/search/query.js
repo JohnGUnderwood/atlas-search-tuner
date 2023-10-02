@@ -72,6 +72,17 @@ function buildQuery(terms,weights){
         });
     });
 
+    if(searchStage['$search']['compound']['should'].length == 0){
+        searchStage = {
+            $search:{
+                text:{
+                    query:terms,
+                    path:{wildcard:"*"}
+                }
+            }
+        }
+    }
+
     return {searchStage:searchStage,msg:msg};
 }
 

@@ -5,6 +5,7 @@ import { H1, H2, H3, Subtitle, Description, Body, InlineCode, Label } from '@lea
 import { MongoDBLogoMark } from '@leafygreen-ui/logo';
 import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
 import { Combobox, ComboboxGroup, ComboboxOption } from '@leafygreen-ui/combobox';
+import Banner from '@leafygreen-ui/banner';
 
 function Home() {
   // use state to store fields
@@ -27,9 +28,6 @@ function Home() {
  
   const handleSliderChange = (weight, newValue) => {
     const [type,field] = weight;
-    // var newWeights = weights;
-    // newWeights[type][field] = newValue;
-    // setWeights(newWeights);
     var typeWeights = weights[type];
     typeWeights[field] = newValue
     setWeights(weights => ({
@@ -43,7 +41,9 @@ function Home() {
     var newWeights = {};
     if (fields.length >0){
       fields.forEach((field) => {
-        const [ftype,fname]=field.split('_');
+        const ftype = field.split('_')[0];
+        // Fieldname might have '_' in it
+        const fname = field.split('_').slice(1).join('_');
         if(weights[ftype]){
           if(weights[ftype][fname]){
             if(ftype in newWeights){
@@ -155,6 +155,10 @@ function Home() {
             <InlineCode>
               {JSON.stringify(searchResponse.query.searchStage)}
             </InlineCode>
+            {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
+              searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
+              : <></>
+            }
           </div>
           : <></>
         }
@@ -228,7 +232,7 @@ function searchRequest(query, weights) {
 function fetchFieldData() {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(axios.get('api/search/fields?index=default&type=string&type=autocomplete'));
+      resolve(axios.get('api/search/fields?index=default&type=string&type=autocomplete&type=stringFacet'));
     }, 1000);
   });
 }
