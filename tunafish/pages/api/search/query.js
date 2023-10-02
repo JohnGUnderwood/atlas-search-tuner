@@ -67,7 +67,7 @@ function buildQuery(terms,weights){
                     }
                 )
             }else{
-                msg.push(`${type} is ignored. Field path ${field} not used for search.`)
+                msg.push(`${type} is ignored. Field path '${field}' not used for search.`)
             }
         });
     });

@@ -155,6 +155,7 @@ function Home() {
             <InlineCode>
               {JSON.stringify(searchResponse.query.searchStage)}
             </InlineCode>
+            <br/>
             {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
               searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
               : <></>
