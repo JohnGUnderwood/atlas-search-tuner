@@ -14,6 +14,7 @@
     "@leafygreen-ui/logo": "^8.0.11",
     "@leafygreen-ui/menu": "^22.0.8",
     "@leafygreen-ui/search-input": "^2.1.1",
+    "@leafygreen-ui/text-input": "^12.1.22",
     "@leafygreen-ui/typography": "^17.0.1",
     "axios": "^1.5.1",
     "mongodb": "6.1",

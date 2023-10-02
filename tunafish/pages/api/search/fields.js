@@ -44,18 +44,22 @@ function listFieldsFromIndex(typeMap,fieldMappings,parent){
 export default function handler(req, res) {
   // res.status(200).json({ message: 'Hello from Next.js!' })
 
+  if(!req.query.conn || !req.query.coll || !req.query.db){
+    res.status(400).json({error:"Missing Connection Details!"})
+  }
+
   const indexName = ( ('index' in req.query)? req.query.index : "default");
   const fieldTypes = ( (Array.isArray(req.query.type))? req.query.type : [req.query.type] );
 
   // connect to your Atlas deployment
-  const uri =  "mongodb+srv://main_user:demos@cluster0.mcessqn.mongodb.net";
+  const uri =  req.query.conn;
 
   const client = new MongoClient(uri);
 
   async function run() {
     try {
-      const database = client.db("sample_mflix");
-      const collection = database.collection("movies");
+      const database = client.db(req.query.db);
+      const collection = database.collection(req.query.coll);
 
       const indexDef = await collection.listSearchIndexes(indexName).toArray();
       const types = parseIndex(indexDef);

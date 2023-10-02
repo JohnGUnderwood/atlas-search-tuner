@@ -88,6 +88,10 @@ function buildQuery(terms,weights){
 
 export default function handler(req, res) {
 
+    if(!req.query.conn || !req.query.coll || !req.query.db){
+        res.status(400).json({error:"Missing Connection Details!"})
+    }
+
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
     
@@ -100,14 +104,14 @@ export default function handler(req, res) {
     const query = buildQuery(terms,weights);
 
     // connect to your Atlas deployment
-    const uri =  "mongodb+srv://main_user:demos@cluster0.mcessqn.mongodb.net";
+    const uri =  req.query.conn;
   
     const client = new MongoClient(uri);
   
     async function run() {
       try {
-        const database = client.db("sample_mflix");
-        const collection = database.collection("movies");
+        const database = client.db(req.query.db);
+        const collection = database.collection(req.query.coll);
         
         try{
             const results = await collection.aggregate(
