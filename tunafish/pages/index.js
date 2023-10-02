@@ -8,6 +8,7 @@ import { Combobox, ComboboxGroup, ComboboxOption } from '@leafygreen-ui/combobox
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import TextInput from '@leafygreen-ui/text-input';
+import SearchResultFields from '../components/fields';
 
 function Home() {
   const [loading, setLoading] = useState(false);
@@ -208,59 +209,10 @@ function Home() {
               aria-label="some label"
             ></SearchInput>
             {searchResponse.results?.map(result=>(
-              // <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
-              //   <Subtitle>{result.title}</Subtitle>
-              //   <InlineCode>Score: <em>{result.score}</em></InlineCode>
-              //   <Description weight="regular">{result.plot}</Description>
-              //   <div>
-              //     <div style={{width:"33%", float:"left"}}>
-              //       <Label>
-              //         Cast
-              //         {result.cast?.map(member=>(
-              //           <Body>{member}</Body>
-              //         ))}
-              //       </Label>
-              //     </div>
-              //     <div style={{width:"33%", float:"left"}}>
-              //       <Label>
-              //         Genres
-              //         {result.genres?.map(genre=>(
-              //           <Body>{genre}</Body>
-              //         ))}
-              //       </Label>
-              //     </div>
-              //     <div style={{width:"33%", float:"left"}}>
-              //       <Label>
-              //         Year
-              //         <Body>{result.year}</Body>
-              //       </Label>
-              //     </div>
-
-              //   </div>
-              // </SearchResult>
               <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
-                {
-                  Object.keys(result).map(attr=>(
-                    <Label>
-                      {attr}
-                      {typeof result[attr] === 'object'? 
-                        Array.isArray(result[attr]) ? 
-                          result[attr].reduce((display, item, index)=>{
-                            if(index < 4){
-                              display.push(<Body>{item}</Body>)
-                            }else if(index == 5){
-                              display.push(<Body>{item} ... ({result[attr].length-5} more)</Body>)
-                            } 
-                            return display
-                          },[])
-                          :
-                          <Body>{JSON.stringify(result[attr])}</Body>
-                        :
-                        <Body>{result[attr]}</Body>
-                      }
-                    </Label>
-                  ))
-                }
+                <InlineCode><em>score:</em> {result.score}</InlineCode>
+                <br/>
+                <SearchResultFields doc={result}></SearchResultFields>
               </SearchResult>
             ))}
             {

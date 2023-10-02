@@ -86,6 +86,26 @@ function buildQuery(terms,weights){
     return {searchStage:searchStage,msg:msg};
 }
 
+function buildProjection(weights){
+    var projectStage = {$project:{_id:0}}
+
+    if(weights === undefined || isEmpty(weights)){
+        return projectStage;
+    }else{
+        const types = Object.keys(weights)
+
+        types.forEach((type)=>{
+            const fields = Object.keys(weights[type])
+            fields.forEach((field)=>{
+                projectStage['$project'][field]=1
+            })
+        })
+
+        return projectStage;
+    }
+
+}
+
 export default function handler(req, res) {
 
     if(!req.query.conn || !req.query.coll || !req.query.db){
@@ -95,16 +115,12 @@ export default function handler(req, res) {
     const index = req.query.index? req.query.index : "default" ;
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
-    
-    // let types = Object.keys(weights);
-    // types.forEach((type) => {
-    //     let fields = Object.keys(weights[type]);
-    //     fields.forEach((field) => console.log("type, field, weight: ",type,field,weights[type][field]))
-    // });
   
     const query = buildQuery(terms,weights);
     var searchStage = query.searchStage;
 
+
+    const projectStage = buildProjection(weights);
 
     searchStage['$search']['index'] = index;
 
@@ -122,21 +138,12 @@ export default function handler(req, res) {
             const results = await collection.aggregate(
                 [
                     searchStage,
+                    projectStage,
                     {
                         $addFields:{
-                            score: { $round : [ {$meta:"searchScore"}, 2 ] }
+                            score: { $round : [ {$meta:"searchScore"}, 4 ] }
                         }
                     },
-                    // {
-                    //     $project:{
-                    //         title:1,
-                    //         plot:1,
-                    //         genres:1,
-                    //         year:1,
-                    //         cast:1,
-                            
-                    //     }
-                    // },
                     {
                         $limit:5
                     }
