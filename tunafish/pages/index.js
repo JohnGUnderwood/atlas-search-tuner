@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { H1, H2, H3, Subtitle, Description, Body, InlineCode, Label } from '@leafygreen-ui/typography';
 import { MongoDBLogoMark } from '@leafygreen-ui/logo';
-import { SearchInput, SearchResult, SearchResultGroup } from '@leafygreen-ui/search-input';
+import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
 import { Combobox, ComboboxGroup, ComboboxOption } from '@leafygreen-ui/combobox';
 
 function Home() {
@@ -25,21 +25,52 @@ function Home() {
       .catch(console.error);
   }, []);
  
-  const handleSliderChange = (field, newValue) => {
+  const handleSliderChange = (weight, newValue) => {
+    const [type,field] = weight;
+    // var newWeights = weights;
+    // newWeights[type][field] = newValue;
+    // setWeights(newWeights);
+    var typeWeights = weights[type];
+    typeWeights[field] = newValue
     setWeights(weights => ({
       ...weights,
-      [field]: newValue
+      [type]: typeWeights
     }));
   };
 
   const handleFieldToggle = (value) => {
     const fields = value;
-    const newWeights = {};
-    console.log(fields);
+    var newWeights = {};
     if (fields.length >0){
       fields.forEach((field) => {
-        newWeights[field] = 0;
+        const [ftype,fname]=field.split('_');
+        if(weights[ftype]){
+          if(weights[ftype][fname]){
+            if(ftype in newWeights){
+              newWeights[ftype][fname] = weights[ftype][fname];
+            }else{
+              newWeights[ftype] = {};
+              newWeights[ftype][fname] = weights[ftype][fname];
+            }
+          }else{
+            if(ftype in newWeights){
+              newWeights[ftype][fname] = 0;
+            }else{
+              newWeights[ftype] = {};
+              newWeights[ftype][fname] = 0;
+            }
+          }
+        }else{
+          if(ftype in newWeights){
+            newWeights[ftype][fname] = 0;
+          }else{
+            newWeights[ftype] = {};
+            newWeights[ftype][fname] = 0;
+          }
+        }
+
       });
+      console.log(newWeights);
       setWeights(newWeights);
     }else{
       setWeights(newWeights);
@@ -50,13 +81,13 @@ function Home() {
     const query = event.target.value;
     setQueryTerms(query);
     searchRequest(query, weights)
-      .then(setSearchResponse)
+      .then(resp => setSearchResponse(resp.data))
       .catch(console.error);
   };
 
   const handlSearchClick = () => {
     searchRequest(queryTerms, weights)
-      .then(setSearchResponse)
+      .then(resp => setSearchResponse(resp.data))
       .catch(console.error);
   }
 
@@ -79,35 +110,54 @@ function Home() {
             {Object.keys(fields).map(fieldType => (
               <ComboboxGroup key={fieldType} label={fieldType}>
                 {fields[fieldType].map(field => (
-                  <ComboboxOption key={fieldType+'_'+field} value={field}/>
+                  <ComboboxOption key={fieldType+'_'+field} value={fieldType+'_'+field} displayName={field}/>
                 ))}
               </ComboboxGroup>
             ))}
           </Combobox>
         </div>
         <div style={{paddingTop:"2%"}}>
-          {Object.keys(weights).map(field => (
-            <p>
-              <Label key={field}>
-                {field}
-                <input
-                  type="range"
-                  min="-10"
-                  max="10"
-                  value={weights[field] || 0} 
-                  onChange={(e) => handleSliderChange(field, e.target.value)}
-                />
-                <input
-                  style={{width:"2lvh"}}
-                  type="text"
-                  value={weights[field] || 0} 
-                  onChange={(e) => handleSliderChange(field, e.target.value)}
-                />
-              </Label>
-            </p>
+          {Object.keys(weights).map(type => (
+            <div key={type}>
+              <Subtitle>{type} fields</Subtitle>
+              {Object.keys(weights[type]).map(field => (
+                <div key={type+'_'+field}>
+                  <Label>
+                    {field}
+                    <input
+                      key={type+'_'+field+'_slider'}
+                      style={{verticalAlign:"bottom"}}
+                      type="range"
+                      min="-10"
+                      max="10"
+                      value={weights[type][field] || 0} 
+                      onChange={(e) => handleSliderChange([type,field], e.target.value)}
+                    />
+                    <input
+                      key={type+'_'+field+'_box'}
+                      style={{width:"2lvh"}}
+                      type="text"
+                      value={weights[type][field] || 0} 
+                      onChange={(e) => handleSliderChange([type,field], e.target.value)}
+                    />
+                  </Label>
+                </div>
+              ))}
+            </div>
           ))}
         </div>
+        <br/>
         <button onClick={handlSearchClick}>Search</button>
+        {searchResponse.query?
+          <div>
+            <br/>
+            <H3>Query used</H3>
+            <InlineCode>
+              {JSON.stringify(searchResponse.query.searchStage)}
+            </InlineCode>
+          </div>
+          : <></>
+        }
       </div>
       <div style={{width:"70%", float:"right"}}>
         <div>
@@ -115,7 +165,7 @@ function Home() {
             onChange={handleQueryChange}
             aria-label="some label"
           ></SearchInput>
-          {searchResponse.data?.map(result=>(
+          {searchResponse.results?.map(result=>(
             <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
               <Subtitle>{result.title}</Subtitle>
               <InlineCode>Score: <em>{result.score}</em></InlineCode>
@@ -147,6 +197,13 @@ function Home() {
               </div>
             </SearchResult>
           ))}
+          {
+            !searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
+            <SearchResult clickable="false">
+              <Subtitle>No Results</Subtitle>
+              <Description weight="regular">Could not find any results for your search</Description>
+            </SearchResult>
+          }
         </div>
       </div>
     </>
@@ -155,14 +212,12 @@ function Home() {
  
 
 function searchRequest(query, weights) {
-
-
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(
-        axios.post(
-          `https://eu-west-2.aws.data.mongodb-api.com/app/querytuner-kysxq/endpoint/search?terms=${query}`,
-          {'weights':weights}
+        axios.post(`api/search/query?terms=${query}`,
+          { weights : weights},
+          { headers : 'Content-Type: application/json'}
         )
       );
     }, 1000);
@@ -174,7 +229,6 @@ function fetchFieldData() {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(axios.get('api/search/fields?index=default&type=string&type=autocomplete'));
-      // resolve(['title', 'plot', 'genres']);
     }, 1000);
   });
 }
