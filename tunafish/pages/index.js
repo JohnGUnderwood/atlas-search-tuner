@@ -152,14 +152,14 @@ function Home() {
           <div>
             <br/>
             <H3>Query used</H3>
-            <InlineCode>
-              {JSON.stringify(searchResponse.query.searchStage)}
-            </InlineCode>
-            <br/>
             {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
               searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
               : <></>
             }
+            <br/>
+            <InlineCode>
+              {JSON.stringify(searchResponse.query.searchStage)}
+            </InlineCode>
           </div>
           : <></>
         }
