@@ -70,7 +70,6 @@ function Home() {
         }
 
       });
-      console.log(newWeights);
       setWeights(newWeights);
     }else{
       setWeights(newWeights);

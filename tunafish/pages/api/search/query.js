@@ -90,14 +90,12 @@ export default function handler(req, res) {
 
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
-
-    console.log("terms: ", terms);
     
-    let types = Object.keys(weights);
-    types.forEach((type) => {
-        let fields = Object.keys(weights[type]);
-        fields.forEach((field) => console.log("type, field, weight: ",type,field,weights[type][field]))
-    });
+    // let types = Object.keys(weights);
+    // types.forEach((type) => {
+    //     let fields = Object.keys(weights[type]);
+    //     fields.forEach((field) => console.log("type, field, weight: ",type,field,weights[type][field]))
+    // });
   
     const query = buildQuery(terms,weights);
 
