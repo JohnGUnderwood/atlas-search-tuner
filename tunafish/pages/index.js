@@ -10,6 +10,7 @@ import Banner from '@leafygreen-ui/banner';
 import TextInput from '@leafygreen-ui/text-input';
 
 function Home() {
+  const [loading, setLoading] = useState(false);
   // use state to store fields
   const [connection, setConnection] = useState("");
   const [user, setUser] = useState("");
@@ -98,15 +99,11 @@ function Home() {
   }
 
   const handleSubmit = () => {
+    setLoading(true);
     fetchFieldData(connection,database,collection)
-      .then(resp => setFields(resp.data))
+      .then(resp => {setFields(resp.data);setLoading(false);})
       .catch(console.error);
   }
-
-  // Render loading state if fields is null
-  // if (fields === null) {
-  //   return <div>Loading...</div>
-  // }
 
   return (
     <>
@@ -138,6 +135,8 @@ function Home() {
         </div>
       </div>
       <hr/>
+      {loading? <Banner>Getting Data...</Banner> : 
+      <>
       {fields?
         <div>
         <div style={{width:"30%",float:"left"}}>
@@ -249,7 +248,7 @@ function Home() {
         </div>
       </div>
       : <Banner>Submit Connection Details</Banner>
-      }
+      }</>}
       
     </>
   )
