@@ -120,6 +120,9 @@ export default async function handler(req, res) {
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
 
+    const limit = req.query.rpp? parseInt(req.query.rpp) : 6;
+    const skip = req.query.page? parseInt(req.query.page-1)*limit : 0;
+
     const query = buildQuery(terms,weights);
     var searchStage = query.searchStage;
     searchStage['$search']['index'] = index;
@@ -141,7 +144,10 @@ export default async function handler(req, res) {
                 }
             },
             {
-                $limit:5
+                $skip:skip
+            },
+            {
+                $limit:limit
             }
         ]
 

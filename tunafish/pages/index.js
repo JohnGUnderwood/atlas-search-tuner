@@ -16,33 +16,28 @@ import { Spinner } from '@leafygreen-ui/loading-indicator'
 function Home() {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-
-  // use state to store fields
   const [connection, setConnection] = useState("");
   const [database, setDatabase] = useState("");
   const [collection, setCollection] = useState("");
   const [searchIndex, setIndex] = useState("default");
-
   const [fields, setFields] = useState(null);
   const [queryTerms, setQueryTerms] = useState(null);
-
-  // use state to store field weights
   const [weights, setWeights] = useState({});
-
-  // const [query, setQuery] = useState('');
   const [searchResponse, setSearchResponse] = useState({});
+  const [searchPage, setSearchPage] = useState(1);
+  const pageSize = 6;
  
   const handleQueryChange = (event) => {
     const query = event.target.value;
     setQueryTerms(query);
-    searchRequest(query, weights, connection, database, collection, searchIndex)
+    searchRequest(query, weights, connection, database, collection, searchIndex, searchPage, pageSize)
       .then(resp => setSearchResponse(resp.data))
       .catch(console.error);
   };
 
   const handleSearchClick = () => {
     setSearching(true);
-    searchRequest(queryTerms, weights, connection, database, collection, searchIndex)
+    searchRequest(queryTerms, weights, connection, database, collection, searchIndex, searchPage, pageSize)
       .then(resp => {setSearchResponse(resp.data);setSearching(false);})
       .catch(console.error);
   }
@@ -147,11 +142,11 @@ function Home() {
 }
  
 
-function searchRequest(query, weights, conn, db, coll, index) {
+function searchRequest(query, weights, conn, db, coll, index, page, rpp) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(
-        axios.post(`api/search/query?terms=${query}&conn=${encodeURIComponent(conn)}&db=${db}&coll=${coll}&index=${index}`,
+        axios.post(`api/search/query?terms=${query}&conn=${encodeURIComponent(conn)}&db=${db}&coll=${coll}&index=${index}&page=${page}&rpp=${rpp}`,
           { weights : weights},
           { headers : 'Content-Type: application/json'}
         )

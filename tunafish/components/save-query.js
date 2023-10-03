@@ -7,7 +7,7 @@ import TextInput from '@leafygreen-ui/text-input';
 function SaveQuery({query}){
     const [name, setName] = useState(null);
     const [open, setOpen] = useState(false);
-    const [type, setType] = useState(null)
+    const [type, setType] = useState(null);
 
     return (
         <>
