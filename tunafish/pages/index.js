@@ -69,7 +69,7 @@ function Home() {
           <H1><MongoDBLogoMark/>Atlas Search Query Tuner</H1>
         </div>
         <div style={{marginLeft:"auto", paddingRight:"50px", width:"75%"}}>
-          <TextInput  label="Connection String" value={connection} type="url" onChange={(e)=>setConnection(e.target.value)}></TextInput>
+          <TextInput placeholder='mongodb+srv://<user>:<password>@<cluster uri>'  label="Connection String" value={connection} type="password" onChange={(e)=>setConnection(e.target.value)}></TextInput>
           <table>
             <tbody>
               <tr>
