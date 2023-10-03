@@ -41,41 +41,77 @@ function listFieldsFromIndex(typeMap,fieldMappings,parent){
   });    
 }
 
-export default function handler(req, res) {
-  // res.status(200).json({ message: 'Hello from Next.js!' })
+async function getIndexDef(conn,coll,db,index){
+  const client = new MongoClient(conn);
+  const collection = client.db(db).collection(coll)
+  const indexDef = await collection.listSearchIndexes(index).toArray();
+  client.close();
+  return indexDef;
+}
 
-  if(!req.query.conn || !req.query.coll || !req.query.db){
-    return res.status(400).json({error:"Missing Connection Details!"})
-  }
+export default async function handler(req, res) {
 
   const indexName = ( ('index' in req.query)? req.query.index : "default");
   const fieldTypes = ( (Array.isArray(req.query.type))? req.query.type : [req.query.type] );
 
-  // connect to your Atlas deployment
-  const uri =  req.query.conn;
+  // // connect to your Atlas deployment
+  // const uri =  req.query.conn;
+  // const client = new MongoClient(uri);
 
-  const client = new MongoClient(uri);
-
-  async function run() {
-    try {
-      const database = client.db(req.query.db);
-      const collection = database.collection(req.query.coll);
-
-      const indexDef = await collection.listSearchIndexes(indexName).toArray();
-      const types = parseIndex(indexDef);
-      
-      if(fieldTypes[0] == undefined){
-        return res.status(200).json(types)
-      }else{
-        var result = {};
-        fieldTypes.forEach((type)=>{
-          result[type]=types[type];
-        });
-        return res.status(200).json(result);
-      }
-    } finally {
-      await client.close();
+  return new Promise((resolve, reject) => {
+    if(!req.query.conn || !req.query.coll || !req.query.db){
+      res.status(400).json({error:"Missing Connection Details!"}).end()
+      resolve();
     }
-  }
-  run().catch(console.dir);
+
+    getIndexDef(req.query.conn,req.query.coll,req.query.db,indexName)
+      .then(response => {
+        const types = parseIndex(response);
+        if(fieldTypes[0] == undefined){
+          res.status(200).json(types).end();
+          resolve();
+        }else{
+          var result = {};
+          fieldTypes.forEach((type)=>{
+            result[type]=types[type];
+          });
+          res.status(200).json(result).end();
+          resolve();
+        }
+      })
+      .catch(error => {
+        res.json(error);
+        res.status(405).end();
+        resolve();
+      });
+  });
+
+  
+
+  
+
+  
+
+  // async function run() {
+  //   try {
+  //     const database = client.db(req.query.db);
+  //     const collection = database.collection(req.query.coll);
+
+  //     const indexDef = await collection.listSearchIndexes(indexName).toArray();
+  //     const types = parseIndex(indexDef);
+      
+  //     if(fieldTypes[0] == undefined){
+  //       return res.status(200).json(types)
+  //     }else{
+  //       var result = {};
+  //       fieldTypes.forEach((type)=>{
+  //         result[type]=types[type];
+  //       });
+  //       return res.status(200).json(result);
+  //     }
+  //   } finally {
+  //     await client.close();
+  //   }
+  // }
+  // run().catch(console.dir);
 }
