@@ -54,10 +54,6 @@ export default async function handler(req, res) {
   const indexName = ( ('index' in req.query)? req.query.index : "default");
   const fieldTypes = ( (Array.isArray(req.query.type))? req.query.type : [req.query.type] );
 
-  // // connect to your Atlas deployment
-  // const uri =  req.query.conn;
-  // const client = new MongoClient(uri);
-
   return new Promise((resolve, reject) => {
     if(!req.query.conn || !req.query.coll || !req.query.db){
       res.status(400).json({error:"Missing Connection Details!"}).end()
@@ -85,33 +81,4 @@ export default async function handler(req, res) {
         resolve();
       });
   });
-
-  
-
-  
-
-  
-
-  // async function run() {
-  //   try {
-  //     const database = client.db(req.query.db);
-  //     const collection = database.collection(req.query.coll);
-
-  //     const indexDef = await collection.listSearchIndexes(indexName).toArray();
-  //     const types = parseIndex(indexDef);
-      
-  //     if(fieldTypes[0] == undefined){
-  //       return res.status(200).json(types)
-  //     }else{
-  //       var result = {};
-  //       fieldTypes.forEach((type)=>{
-  //         result[type]=types[type];
-  //       });
-  //       return res.status(200).json(result);
-  //     }
-  //   } finally {
-  //     await client.close();
-  //   }
-  // }
-  // run().catch(console.dir);
 }

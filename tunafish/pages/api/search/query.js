@@ -106,56 +106,89 @@ function buildProjection(weights){
 
 }
 
-export default function handler(req, res) {
+async function getResults(conn,db,coll,pipeline){
+    const client = new MongoClient(conn);
+    const collection = client.db(db).collection(coll)
+    const results = await collection.aggregate(pipeline).toArray();
+    client.close();
+    return results;
+}
 
-    if(!req.query.conn || !req.query.coll || !req.query.db){
-        return res.status(400).json({error:"Missing Connection Details!"})
-    }
+export default async function handler(req, res) {
 
     const index = req.query.index? req.query.index : "default" ;
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
-  
+
     const query = buildQuery(terms,weights);
     var searchStage = query.searchStage;
-
+    searchStage['$search']['index'] = index;
 
     const projectStage = buildProjection(weights);
 
-    searchStage['$search']['index'] = index;
-
-    // connect to your Atlas deployment
-    const uri =  req.query.conn;
-  
-    const client = new MongoClient(uri);
-  
-    async function run() {
-      try {
-        const database = client.db(req.query.db);
-        const collection = database.collection(req.query.coll);
-        
-        try{
-            const results = await collection.aggregate(
-                [
-                    searchStage,
-                    projectStage,
-                    {
-                        $addFields:{
-                            score: { $round : [ {$meta:"searchScore"}, 4 ] }
-                        }
-                    },
-                    {
-                        $limit:5
-                    }
-                ]
-            ).toArray();
-            return res.status(200).json({results:results,query:query});
-        }catch (error){
-            return res.status(400).json({'error':error,query:query})
+    return new Promise((resolve, reject) => {
+        if(!req.query.conn || !req.query.db || !req.query.coll){
+            res.status(400).json({error:"Missing Connection Details!"});
+            resolve();
         }
-      } finally {
-        await client.close();
-      }
-    }
-    run().catch(console.dir);
+
+        const pipeline = [
+            searchStage,
+            projectStage,
+            {
+                $addFields:{
+                    score: { $round : [ {$meta:"searchScore"}, 4 ] }
+                }
+            },
+            {
+                $limit:5
+            }
+        ]
+
+        getResults(req.query.conn,req.query.db,req.query.coll,pipeline)
+            .then(response => {
+                res.status(200).json({results:response,query:query}).end();
+                resolve();
+            })
+            .catch(error => {
+                res.json({'error':error,query:query})
+                res.status(405).end();
+                resolve();
+            });
+
+    });
+
+
+    
+
+  
+    // async function run() {
+    //   try {
+    //     const database = client.db(req.query.db);
+    //     const collection = database.collection(req.query.coll);
+        
+    //     try{
+    //         const results = await collection.aggregate(
+    //             [
+    //                 searchStage,
+    //                 projectStage,
+    //                 {
+    //                     $addFields:{
+    //                         score: { $round : [ {$meta:"searchScore"}, 4 ] }
+    //                     }
+    //                 },
+    //                 {
+    //                     $limit:5
+    //                 }
+    //             ]
+    //         ).toArray();
+    //         return res.status(200).json({results:results,query:query});
+    //     }catch (error){
+    //         return res.status(400).json({'error':error,query:query})
+    //     }
+    //   } finally {
+    //     await client.close();
+    //   }
+    // }
+    // run().catch(console.dir);
   }
