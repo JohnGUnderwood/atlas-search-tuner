@@ -14,6 +14,8 @@ import SelectFieldWeights from '../components/field-weights';
 
 function Home() {
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+
   // use state to store fields
   const [connection, setConnection] = useState("");
   const [database, setDatabase] = useState("");
@@ -38,8 +40,9 @@ function Home() {
   };
 
   const handleSearchClick = () => {
+    setSearching(true);
     searchRequest(queryTerms, weights, connection, database, collection, searchIndex)
-      .then(resp => setSearchResponse(resp.data))
+      .then(resp => {setSearchResponse(resp.data);setSearching(false);})
       .catch(console.error);
   }
 
@@ -113,19 +116,24 @@ function Home() {
               onChange={handleQueryChange}
               aria-label="some label"
             ></SearchInput>
-            {searchResponse.results?.map(result=>(
-              <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
-                <InlineCode><em>score:</em> {result.score}</InlineCode>
-                <br/>
-                <SearchResultFields doc={result}></SearchResultFields>
-              </SearchResult>
-            ))}
-            {
-              !searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
-              <SearchResult clickable="false">
-                <Subtitle>No Results</Subtitle>
-                <Description weight="regular">Could not find any results for your search</Description>
-              </SearchResult>
+            {searching?
+              <Banner>Getting search results...</Banner>
+              :
+              <>
+                {searchResponse.results?.map(result=>(
+                  <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+                    <InlineCode><em>score:</em> {result.score}</InlineCode>
+                    <br/>
+                    <SearchResultFields doc={result}></SearchResultFields>
+                  </SearchResult>
+                ))}
+                {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
+                  <SearchResult clickable="false">
+                    <Subtitle>No Results</Subtitle>
+                    <Description weight="regular">Could not find any results for your search</Description>
+                  </SearchResult>
+                }
+              </>
             }
           </div>
         </div>
