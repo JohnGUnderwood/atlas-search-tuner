@@ -157,38 +157,4 @@ export default async function handler(req, res) {
             });
 
     });
-
-
-    
-
-  
-    // async function run() {
-    //   try {
-    //     const database = client.db(req.query.db);
-    //     const collection = database.collection(req.query.coll);
-        
-    //     try{
-    //         const results = await collection.aggregate(
-    //             [
-    //                 searchStage,
-    //                 projectStage,
-    //                 {
-    //                     $addFields:{
-    //                         score: { $round : [ {$meta:"searchScore"}, 4 ] }
-    //                     }
-    //                 },
-    //                 {
-    //                     $limit:5
-    //                 }
-    //             ]
-    //         ).toArray();
-    //         return res.status(200).json({results:results,query:query});
-    //     }catch (error){
-    //         return res.status(400).json({'error':error,query:query})
-    //     }
-    //   } finally {
-    //     await client.close();
-    //   }
-    // }
-    // run().catch(console.dir);
   }
