@@ -11,6 +11,7 @@ import TextInput from '@leafygreen-ui/text-input';
 import SearchResultFields from '../components/fields';
 import SaveQuery from '../components/save-query';
 import SelectFieldWeights from '../components/field-weights';
+import { Spinner } from '@leafygreen-ui/loading-indicator'
 
 function Home() {
   const [loading, setLoading] = useState(false);
@@ -82,7 +83,7 @@ function Home() {
         </div>
       </div>
       <hr/>
-      {loading? <Banner>Getting Data...</Banner> : 
+      {loading? <Spinner description="Getting Data..."></Spinner> : 
       <>
       {fields?
         <div>
@@ -117,7 +118,7 @@ function Home() {
               aria-label="some label"
             ></SearchInput>
             {searching?
-              <Banner>Getting search results...</Banner>
+              <Spinner description="Getting Search Results..."></Spinner>
               :
               <>
                 {searchResponse.results?.map(result=>(
