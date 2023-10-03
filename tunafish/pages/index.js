@@ -100,7 +100,7 @@ function Home() {
                 </InlineCode>
               </p>
               <p>
-                <SaveQuery query={searchResponse.query.searchStage}></SaveQuery>
+                <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
               </p>
             </div>
             : <></>
