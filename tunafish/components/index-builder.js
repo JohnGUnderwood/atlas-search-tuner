@@ -1,0 +1,85 @@
+import { useState } from 'react';
+import axios from 'axios';
+import SearchResultFields from './fields';
+import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
+import { Spinner } from '@leafygreen-ui/loading-indicator';
+import { H3, Subtitle, Description, InlineCode } from '@leafygreen-ui/typography';
+import Banner from '@leafygreen-ui/banner';
+
+function IndexBuilder({indexDef,connection}){
+    const [searching, setSearching] = useState(false);
+    const [queryTerms, setQueryTerms] = useState(null);
+    const [searchResponse, setSearchResponse] = useState({});
+    const [searchPage, setSearchPage] = useState(1);
+    const pageSize = 6;
+
+    const handleQueryChange = (event) => {
+        const query = event.target.value;
+        setQueryTerms(query);
+        searchRequest(query, weights, connection, searchPage, pageSize)
+          .then(resp => setSearchResponse(resp.data))
+          .catch(console.error);
+      };
+    
+      const handleSearchClick = () => {
+        setSearching(true);
+        searchRequest(queryTerms, weights, connection, searchPage, pageSize)
+          .then(resp => {setSearchResponse(resp.data);setSearching(false);})
+          .catch(console.error);
+      }
+
+    return (
+        <>
+        {indexDef?
+            <div>
+            <div style={{width:"30%",float:"left"}}>
+              Select Fields
+            </div>
+            <div style={{width:"70%", float:"right", paddingTop:"15px"}}>
+              <div>
+                <SearchInput
+                  onChange={handleQueryChange}
+                  aria-label="some label"
+                ></SearchInput>
+                {searching?
+                  <Spinner description="Getting Search Results..."></Spinner>
+                  :
+                  <>
+                    {searchResponse.results?.map(result=>(
+                      <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+                        <InlineCode><em>score:</em> {result.score}</InlineCode>
+                        <br/>
+                        <SearchResultFields doc={result}></SearchResultFields>
+                      </SearchResult>
+                    ))}
+                    {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
+                      <SearchResult clickable="false">
+                        <Subtitle>No Results</Subtitle>
+                        <Description weight="regular">Could not find any results for your search</Description>
+                      </SearchResult>
+                    }
+                  </>
+                }
+              </div>
+            </div>
+          </div>
+          : <Banner>Submit Connection Details</Banner>
+          }
+          </>
+    )
+}
+
+function searchRequest(query, weights, conn, page, rpp) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(
+          axios.post(`api/search/query?terms=${query}&conn=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}&index=${conn.searchIndex}&page=${page}&rpp=${rpp}`,
+            { weights : weights},
+            { headers : 'Content-Type: application/json'}
+          )
+        );
+      }, 1000);
+    });
+  }
+
+export default IndexBuilder;

@@ -16,6 +16,8 @@
     "@leafygreen-ui/menu": "^22.0.8",
     "@leafygreen-ui/modal": "^16.0.2",
     "@leafygreen-ui/search-input": "^2.1.1",
+    "@leafygreen-ui/side-nav": "^14.0.3",
+    "@leafygreen-ui/tabs": "^11.1.10",
     "@leafygreen-ui/text-input": "^12.1.22",
     "@leafygreen-ui/typography": "^17.0.1",
     "axios": "^1.5.1",

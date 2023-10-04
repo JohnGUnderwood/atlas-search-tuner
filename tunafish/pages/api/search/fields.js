@@ -82,7 +82,7 @@ export default async function handler(req, res) {
           fieldTypes.forEach((type)=>{
             result[type]=types[type];
           });
-          res.status(200).json(result).end();
+          res.status(200).json({fields:result,definition:response}).end();
           return resolve();
         }
       })
