@@ -1,16 +1,8 @@
-import { useState, useEffect } from 'react';
 import { Combobox, ComboboxGroup, ComboboxOption } from '@leafygreen-ui/combobox';
 import { Subtitle, Label } from '@leafygreen-ui/typography';
 
 
 function SelectFieldWeights({fields,weights,setWeights}){
-
-    // const [fields, setFields] = useState(inputFields);
-    // const [weights, setWeights] = useState(inputWeights);
-
-    // useEffect(() => {
-    //     setFields(thisFields);
-    // });
 
     const handleSliderChange = (weight, newValue) => {
         const [type,field] = weight;

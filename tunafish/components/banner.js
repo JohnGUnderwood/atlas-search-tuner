@@ -1,7 +1,5 @@
 import { MongoDBLogoMark } from "@leafygreen-ui/logo";
-import { TextInput } from "@leafygreen-ui/text-input";
 import { H1 } from "@leafygreen-ui/typography";
-import Button from "@leafygreen-ui/button";
 
 function AppBanner({heading,children}){
 

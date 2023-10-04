@@ -13,9 +13,7 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [connection, setConnection] = useState({'searchIndex':'default'}); // uri, database, collection, searchIndex
   const [selectedTab, setSelectedTab] = useState(null);
-  
   const [index, setIndex] = useState(null);
-  const [indexDef, setIndexDef] = useState(null);
 
   const handleConnectionChange = (name,value) => {
     const detailName = name;
