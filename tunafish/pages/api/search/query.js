@@ -132,7 +132,7 @@ export default async function handler(req, res) {
     return new Promise((resolve, reject) => {
         if(!req.query.conn || !req.query.db || !req.query.coll){
             res.status(400).json({error:"Missing Connection Details!"});
-            resolve();
+            return resolve();
         }
 
         const pipeline = [
@@ -154,12 +154,12 @@ export default async function handler(req, res) {
         getResults(req.query.conn,req.query.db,req.query.coll,pipeline)
             .then(response => {
                 res.status(200).json({results:response,query:query}).end();
-                resolve();
+                return resolve();
             })
             .catch(error => {
                 res.json({'error':error,query:query})
                 res.status(405).end();
-                resolve();
+                return resolve();
             });
 
     });

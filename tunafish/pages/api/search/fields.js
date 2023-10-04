@@ -42,11 +42,22 @@ function listFieldsFromIndex(typeMap,fieldMappings,parent){
 }
 
 async function getIndexDef(conn,coll,db,index){
-  const client = new MongoClient(conn);
-  const collection = client.db(db).collection(coll)
-  const indexDef = await collection.listSearchIndexes(index).toArray();
-  client.close();
-  return indexDef;
+
+  var collection = "";
+  try{
+    const client = new MongoClient(conn);
+    collection = client.db(db).collection(coll)
+    try{
+      const indexDef = await collection.listSearchIndexes(index).toArray();
+      client.close();
+      return indexDef;
+    }catch{
+      return 'failed to list search indexes';
+    }
+  }catch{
+    return 'Failed to establish connection';
+  }
+  
 }
 
 export default async function handler(req, res) {
@@ -56,8 +67,8 @@ export default async function handler(req, res) {
 
   return new Promise((resolve, reject) => {
     if(!req.query.conn || !req.query.coll || !req.query.db){
-      res.status(400).json({error:"Missing Connection Details!"}).end()
-      resolve();
+      res.status(400).json({error:"Missing Connection Details!"}).end();
+      return resolve();
     }
 
     getIndexDef(req.query.conn,req.query.coll,req.query.db,indexName)
@@ -65,20 +76,19 @@ export default async function handler(req, res) {
         const types = parseIndex(response);
         if(fieldTypes[0] == undefined){
           res.status(200).json(types).end();
-          resolve();
+          return resolve();
         }else{
           var result = {};
           fieldTypes.forEach((type)=>{
             result[type]=types[type];
           });
           res.status(200).json(result).end();
-          resolve();
+          return resolve();
         }
       })
       .catch(error => {
-        res.json(error);
-        res.status(405).end();
-        resolve();
+        res.status(405).json(error);
+        return resolve();
       });
   });
 }
