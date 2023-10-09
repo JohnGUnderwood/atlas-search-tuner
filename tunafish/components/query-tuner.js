@@ -3,10 +3,12 @@ import axios from 'axios';
 import SelectFieldWeights from './field-weights';
 import SearchResultFields from './fields';
 import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
+import Card from '@leafygreen-ui/card';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import { H3, Subtitle, Description, InlineCode } from '@leafygreen-ui/typography';
 import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
+import Banner from '@leafygreen-ui/banner';
 
 function QueryTuner({fields,connection}){
     const [searching, setSearching] = useState(false);
@@ -63,17 +65,18 @@ function QueryTuner({fields,connection}){
                 <SearchInput
                 onChange={handleQueryChange}
                 aria-label="some label"
+                style={{marginBottom:"20px"}}
                 ></SearchInput>
                 {searching?
                 <Spinner description="Getting Search Results..."></Spinner>
                 :
                 <>
                     {searchResponse.results?.map(result=>(
-                    <SearchResult key={result._id} style={{clear:"both"}} clickable="false">
+                    <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
                         <InlineCode><em>score:</em> {result.score}</InlineCode>
                         <br/>
                         <SearchResultFields doc={result}></SearchResultFields>
-                    </SearchResult>
+                    </Card>
                     ))}
                     {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
                     <SearchResult clickable="false">

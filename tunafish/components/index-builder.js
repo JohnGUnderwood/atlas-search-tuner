@@ -22,17 +22,17 @@ function IndexBuilder({connection,schema,setSchema}){
 
   return (
       <>
-        {loading? 
+        {/* {loading? 
           <Spinner description="Getting Schema... Can take up to a minute."></Spinner>
           :
           <>
-            {schema?
+            {schema? */}
               <SearchTutorial/>
-              :
+              {/* :
               <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner>:<></>}</>
             }
           </>
-        }
+        } */}
       </>
   )
 }
