@@ -14,6 +14,7 @@ function Home() {
   const [connection, setConnection] = useState({'searchIndex':'default'}); // uri, database, collection, searchIndex
   const [selectedTab, setSelectedTab] = useState(null);
   const [index, setIndex] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleConnectionChange = (name,value) => {
     const detailName = name;
@@ -25,13 +26,15 @@ function Home() {
   }
 
   const handleSubmit = () => {
+    setIndex(null);
+    setError(null);
     setLoading(true);
     fetchFieldData(connection)
       .then(resp => {
         setIndex(resp.data);
         setLoading(false);
       })
-      .catch(console.error);
+      .catch(error => {console.log(`fetchFieldData error ${error}`);setError(error);setLoading(false)});
   }
 
   return (
@@ -46,9 +49,10 @@ function Home() {
         {index?
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
             <Tab name="Query Tuner"><QueryTuner fields={index.fields} connection={connection}/></Tab>
-            <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab>
+            {/* <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab> */}
+            <Tab name="Index Builder"><IndexBuilder connection={connection}/></Tab>
           </Tabs>
-          :<Banner>Submit Connection Details</Banner>
+          : <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner> : <Banner >Submit Connection Details</Banner>}</>
         }
         </>
       }
@@ -58,12 +62,11 @@ function Home() {
 }
 
 function fetchFieldData(conn) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(
-        axios.get(`api/search/fields?index=${conn.searchIndex}&type=string&type=autocomplete&conn=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}`)
-      );
-    }, 1000);
+  return new Promise((resolve,reject) => {
+    axios.get(`api/search/fields?index=${conn.searchIndex}&type=string&type=autocomplete&conn=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}`)
+      .then(response => resolve(response))
+      .catch((error) => reject(error.response.data)
+    )
   });
 }
 

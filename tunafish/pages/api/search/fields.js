@@ -41,54 +41,61 @@ function listFieldsFromIndex(typeMap,fieldMappings,parent){
   });    
 }
 
-async function getIndexDef(conn,coll,db,index){
+function getIndexDef(conn,coll,db,index){
 
-  var collection = "";
-  try{
-    const client = new MongoClient(conn);
-    collection = client.db(db).collection(coll)
+  return new Promise((resolve, reject) => {
     try{
-      const indexDef = await collection.listSearchIndexes(index).toArray();
-      client.close();
-      return indexDef;
-    }catch{
-      return 'failed to list search indexes';
+      const client = new MongoClient(conn);
+      try {
+        return client.db(db).collection(coll).listSearchIndexes(index).toArray()
+          .then(response => {
+            client.close();
+            // console.log(`listIndexes response ${JSON.stringify(response)}`);
+            resolve(response)
+          })
+          .catch(error => {
+            client.close();
+            throw error;
+          })
+      }catch(error){
+        console.log(`List indexes failed ${error}`)
+        throw error;
+      }
+
+    }catch(error){
+      console.log(`Connection failed ${error}`)
+      throw error;
     }
-  }catch{
-    return 'Failed to establish connection';
-  }
+
+  });
+
   
 }
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
 
   const indexName = ( ('index' in req.query)? req.query.index : "default");
   const fieldTypes = ( (Array.isArray(req.query.type))? req.query.type : [req.query.type] );
 
-  return new Promise((resolve, reject) => {
-    if(!req.query.conn || !req.query.coll || !req.query.db){
-      res.status(400).json({error:"Missing Connection Details!"}).end();
-      return resolve();
-    }
-
-    getIndexDef(req.query.conn,req.query.coll,req.query.db,indexName)
-      .then(response => {
+  if(!req.query.conn || !req.query.coll || !req.query.db){
+    res.status(400).send("Missing Connection Details!");
+  }else{
+    return getIndexDef(req.query.conn,req.query.coll,req.query.db,indexName)
+      .then((response) => {
         const types = parseIndex(response);
         if(fieldTypes[0] == undefined){
-          res.status(200).json(types).end();
-          return resolve();
+          res.status(200).send(types);
         }else{
           var result = {};
           fieldTypes.forEach((type)=>{
             result[type]=types[type];
           });
-          res.status(200).json({fields:result,definition:response}).end();
-          return resolve();
+          res.status(200).send({fields:result,definition:response});
         }
       })
-      .catch(error => {
-        res.status(405).json(error);
-        return resolve();
+      .catch((error) => {
+        console.log(`getIndexDef failed ${error}`)
+        res.status(400).send(`${error}`);
       });
-  });
+  }
 }

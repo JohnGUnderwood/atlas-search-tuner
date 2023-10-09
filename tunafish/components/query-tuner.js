@@ -17,10 +17,11 @@ function QueryTuner({fields,connection}){
     const pageSize = 6;
 
     const handleQueryChange = (event) => {
+        setSearching(true);
         const query = event.target.value;
         setQueryTerms(query);
         searchRequest(query, weights, connection, searchPage, pageSize)
-          .then(resp => setSearchResponse(resp.data))
+          .then(resp => {setSearchResponse(resp.data);setSearching(false)})
           .catch(console.error);
       };
     
@@ -77,7 +78,7 @@ function QueryTuner({fields,connection}){
                     {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
                     <SearchResult clickable="false">
                         <Subtitle>No Results</Subtitle>
-                        <Description weight="regular">Could not find any results for your search</Description>
+                        <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>
                     </SearchResult>
                     }
                 </>
@@ -99,6 +100,6 @@ function searchRequest(query, weights, conn, page, rpp) {
         );
       }, 1000);
     });
-  }
+}
 
 export default QueryTuner;

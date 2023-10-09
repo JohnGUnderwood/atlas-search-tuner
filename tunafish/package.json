@@ -22,15 +22,13 @@
     "@leafygreen-ui/typography": "^17.0.1",
     "axios": "^1.5.1",
     "mongodb": "6.1",
+    "mongodb-schema": "^11.2.2",
     "next": "latest",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "stream-browserify": "^3.0.0"
   },
   "engines": {
-    "node": ">=18"
-  },
-  "devDependencies": {
-    "@types/react": "18.2.23",
-    "typescript": "5.2.2"
+    "node": ">=20"
   }
 }

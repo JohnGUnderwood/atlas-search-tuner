@@ -10,11 +10,11 @@ function SearchResultFields({doc,parent}){
     }
 
     return (
-        children.map(child=>(
+        children.map((child,index)=>(
             <>
             {typeof doc[child] === 'object'?
                 Array.isArray(doc[child]) ?
-                    <Label>
+                    <Label key={`${parent}${index}`}>
                         {child}
                         {doc[child].reduce((display, item, index)=>{
                         if(index < 4){
@@ -26,9 +26,9 @@ function SearchResultFields({doc,parent}){
                         },[])}
                     </Label>
                     :
-                    <SearchResultFields doc={doc[child]} parent={parent? parent+"."+child : child}></SearchResultFields>
+                    <SearchResultFields key={`${parent}${child}${index}`} doc={doc[child]} parent={parent? parent+"."+child : child}></SearchResultFields>
                 :
-                <Label>{parent? parent+"."+child : child}<Body>{doc[child]}</Body></Label>
+                <Label key={`${parent}${index}`}>{parent? parent+"."+child : child}<Body>{doc[child]}</Body></Label>
             }
             </>
         ))
