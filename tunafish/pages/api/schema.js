@@ -2,13 +2,19 @@ import { MongoClient } from "mongodb";
 import parseSchema from 'mongodb-schema';
 
 
-function getSchema(connection){
+function getSchema(connection,sample){
 
     return new Promise((resolve, reject) => {
         try{
             const client = new MongoClient(connection.uri);
             try {
-                return client.db(connection.database).collection(connection.collection).find().toArray()
+                return client.db(connection.database).collection(connection.collection)
+                    .aggregate(
+                        [
+                            {$sample:{size:sample}}
+                        ]
+                    )
+                    .toArray()
                     .then(documentStream => {
                         parseSchema(documentStream)
                         .then(schema => {
@@ -37,7 +43,7 @@ export default function handler(req, res) {
     if(!req.body.connection){
         res.status(400).send("Missing Connection Details!");
     }else{
-        return getSchema(req.body.connection)
+        return getSchema(req.body.connection,10000)
             .then((response) => {
                 res.status(200).send(response);
             })

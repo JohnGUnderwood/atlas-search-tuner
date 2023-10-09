@@ -14,6 +14,7 @@ function Home() {
   const [connection, setConnection] = useState({'searchIndex':'default'}); // uri, database, collection, searchIndex
   const [selectedTab, setSelectedTab] = useState(null);
   const [index, setIndex] = useState(null);
+  const [schema, setSchema] = useState(null);
   const [error, setError] = useState(null);
 
   const handleConnectionChange = (name,value) => {
@@ -50,7 +51,7 @@ function Home() {
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
             <Tab name="Query Tuner"><QueryTuner fields={index.fields} connection={connection}/></Tab>
             {/* <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab> */}
-            <Tab name="Index Builder"><IndexBuilder connection={connection}/></Tab>
+            <Tab name="Index Builder"><IndexBuilder connection={connection} schema={schema} setSchema={setSchema}/></Tab>
           </Tabs>
           : <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner> : <Banner >Submit Connection Details</Banner>}</>
         }
