@@ -5,6 +5,7 @@ import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import { H3, Subtitle, Description, InlineCode } from '@leafygreen-ui/typography';
 import Banner from '@leafygreen-ui/banner';
+import SearchTutorial from './app-tutorial/tutorial';
 
 function IndexBuilder({connection,schema,setSchema}){
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ function IndexBuilder({connection,schema,setSchema}){
           :
           <>
             {schema?
-              <div>{JSON.stringify(schema)}</div>
+              <SearchTutorial/>
               :
               <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner>:<></>}</>
             }

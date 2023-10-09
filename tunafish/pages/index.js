@@ -49,9 +49,9 @@ function Home() {
         <>
         {index?
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
-            <Tab name="Query Tuner"><QueryTuner fields={index.fields} connection={connection}/></Tab>
             {/* <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab> */}
             <Tab name="Index Builder"><IndexBuilder connection={connection} schema={schema} setSchema={setSchema}/></Tab>
+            <Tab name="Query Tuner"><QueryTuner fields={index.fields} connection={connection}/></Tab>
           </Tabs>
           : <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner> : <Banner >Submit Connection Details</Banner>}</>
         }

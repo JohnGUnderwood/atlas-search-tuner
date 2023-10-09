@@ -14,15 +14,6 @@ function MongoDBConnection({connection,handleConnectionChange,handleSubmit}) {
             <TextInput label="Database" value={connection.database} onChange={(e)=>handleConnectionChange('database',e.target.value)}></TextInput>
             <TextInput label="Collection" value={connection.collection} onChange={(e)=>handleConnectionChange('collection',e.target.value)}></TextInput>
             <TextInput label="Search Index" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput>
-            {/* <table>
-                <tbody>
-                    <tr>
-                        <td><TextInput label="Database" value={connection.database} onChange={(e)=>handleConnectionChange('database',e.target.value)}></TextInput></td>
-                        <td><TextInput label="Collection" value={connection.collection} onChange={(e)=>handleConnectionChange('collection',e.target.value)}></TextInput></td>
-                        <td><TextInput label="Search Index" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput></td>
-                    </tr>
-                </tbody>
-            </table> */}
             <Button onClick={handleSubmit}>Submit</Button>
         </div>
     )
