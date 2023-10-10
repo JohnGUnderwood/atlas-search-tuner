@@ -64,7 +64,7 @@ function Home() {
 
 function fetchFieldData(conn) {
   return new Promise((resolve,reject) => {
-    axios.get(`api/search/fields?index=${conn.searchIndex}&type=string&type=autocomplete&conn=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}`)
+    axios.get(`api/search/fields?index=${conn.searchIndex}&type=string&type=autocomplete&uri=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}`)
       .then(response => resolve(response))
       .catch((error) => reject(error.response.data)
     )

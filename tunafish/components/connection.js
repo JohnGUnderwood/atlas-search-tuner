@@ -1,5 +1,6 @@
 import TextInput from "@leafygreen-ui/text-input";
 import Button from "@leafygreen-ui/button";
+import { PasswordInput } from "@leafygreen-ui/password-input";
 
 function MongoDBConnection({connection,handleConnectionChange,handleSubmit}) {
 
@@ -10,11 +11,11 @@ function MongoDBConnection({connection,handleConnectionChange,handleSubmit}) {
             gridTemplateColumns: "25% repeat(3, 15%) 5%",
             gap: "10px"
         }}>
-            <TextInput placeholder='mongodb+srv://<user>:<password>@<cluster uri>'  label="Connection String" value={connection.uri} type="password" onChange={(e)=>handleConnectionChange('uri',e.target.value)}></TextInput>
+            <PasswordInput style={{boxSizing:"border-box"}} label="Connection String" id="connection-string" placeholder='mongodb+srv://<user>:<password>@<cluster uri>' value={connection.uri} onChange={(e)=>handleConnectionChange('uri',e.target.value)}/>
             <TextInput label="Database" value={connection.database} onChange={(e)=>handleConnectionChange('database',e.target.value)}></TextInput>
             <TextInput label="Collection" value={connection.collection} onChange={(e)=>handleConnectionChange('collection',e.target.value)}></TextInput>
             <TextInput label="Search Index" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput>
-            <Button onClick={handleSubmit}>Submit</Button>
+            <div style={{position:"relative"}}><Button style={{position:"absolute", bottom:"0"}} onClick={handleSubmit}>Submit</Button></div>
         </div>
     )
 }

@@ -4,8 +4,9 @@ import Facets from "./facets";
 import Results from "./results";
 import Modal from '@leafygreen-ui/modal';
 import { Subtitle, Body, Link } from '@leafygreen-ui/typography';
+import { getFacetCandidates } from '../../functions/schema';
 
-function SearchTutorial(){
+function SearchTutorial({schema}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState({title:"",content:""});
 
@@ -13,6 +14,8 @@ function SearchTutorial(){
         setModalContent(content);
         setOpen(!open);
     }
+
+    getFacetCandidates(schema)
 
     return (
         <>

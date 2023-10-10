@@ -8,10 +8,15 @@ import { MongoClient } from "mongodb";
 // Response: {"string":["cast","fullplot","genres","plot","title"],"autocomplete":["genres","title"]} 
 
 function parseIndex(indexdef){
-  const fieldMappings = indexdef[0]['latestDefinition']['mappings']['fields']
-  var typeMap = {}
-  listFieldsFromIndex(typeMap,fieldMappings,null)
-  return typeMap;
+  try{
+    const fieldMappings = indexdef[0]['latestDefinition']['mappings']['fields']
+    var typeMap = {}
+    listFieldsFromIndex(typeMap,fieldMappings,null)
+    return typeMap;
+  }catch(error){
+    throw `Error parsing index def ${JSON.stringify(indexdef)}: ${error}`
+  }
+  
 }
 // Function which reads in a search index definition and populates a map of field types to field paths.
 // E.g. {"string":['title','body','category'],"stringFacet":["category"]}
@@ -41,35 +46,62 @@ function listFieldsFromIndex(typeMap,fieldMappings,parent){
   });    
 }
 
-function getIndexDef(conn,coll,db,index){
+function checkCollections(conn,db,coll){
+  return new Promise((resolve,reject)=>{
+    conn.db(db).listCollections().toArray()
+      .then(collections => {
+        if(collections.length > 0){
+          collections.forEach(collection => {
+            if(coll == collection.name){
+              resolve(true)
+            }
+          })
+          resolve(false)
+        }else{
+          reject(`No collections found in database: ${db}`)
+        }
+      })
+      .catch(error =>
+        reject(error)
+      )
+  });
+}
 
+function getIndexDef(uri,coll,db,index){
+  const client = new MongoClient(uri);
   return new Promise((resolve, reject) => {
-    try{
-      const client = new MongoClient(conn);
-      try {
-        return client.db(db).collection(coll).listSearchIndexes(index).toArray()
-          .then(response => {
-            client.close();
-            // console.log(`listIndexes response ${JSON.stringify(response)}`);
-            resolve(response)
+    client.connect()
+      .then(conn => {
+        checkCollections(conn,db,coll)
+          .then(check => {
+            console.log(check)
+            if(check){
+              conn.db(db).collection(coll).listSearchIndexes(index).toArray()
+                .then(response => {
+                  resolve(response)
+                })
+                .catch(error => {
+                  console.log(`List indexes failed ${error}`)
+                  reject(error);
+                })
+            }else{
+              console.log(`Collection ${coll} not found in ${db}`)
+              reject(`Collection ${coll} not found in ${db}`)
+            }
           })
           .catch(error => {
-            client.close();
-            throw error;
+            console.log(`checkCollections failed: ${error}`)
+            reject(error)
           })
-      }catch(error){
-        console.log(`List indexes failed ${error}`)
-        throw error;
-      }
-
-    }catch(error){
-      console.log(`Connection failed ${error}`)
-      throw error;
-    }
-
+      })
+      .catch(error=>{
+        console.log(`Connection failed ${error}`)
+        reject(error);
+      })
+      .finally(
+        client.close()
+      )
   });
-
-  
 }
 
 export default function handler(req, res) {
@@ -77,10 +109,10 @@ export default function handler(req, res) {
   const indexName = ( ('index' in req.query)? req.query.index : "default");
   const fieldTypes = ( (Array.isArray(req.query.type))? req.query.type : [req.query.type] );
 
-  if(!req.query.conn || !req.query.coll || !req.query.db){
+  if(!req.query.uri || !req.query.coll || !req.query.db){
     res.status(400).send("Missing Connection Details!");
   }else{
-    return getIndexDef(req.query.conn,req.query.coll,req.query.db,indexName)
+    return getIndexDef(req.query.uri,req.query.coll,req.query.db,indexName)
       .then((response) => {
         const types = parseIndex(response);
         if(fieldTypes[0] == undefined){
