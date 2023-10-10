@@ -43,6 +43,11 @@ function getSchema(connection){
         reject(error.response.data);
       })
   });
+  // return new Promise((resolve,reject)=>{
+  //   var schema = require('../testing/schema')
+  //   console.log("fetching local schema",schema)
+  //   resolve(schema)
+  // });
 }
 
 export default IndexBuilder;

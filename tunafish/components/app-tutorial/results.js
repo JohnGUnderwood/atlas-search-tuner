@@ -23,25 +23,24 @@ function Results({openModal}){
                 <Card key={i} style={{marginBottom:"20px"}}>
                     <Subtitle style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black}}>&nbsp;</Subtitle>
                     <br/>
-                    <Description weight="regular">
+                    <div weight="regular" as="div">
                     {[...Array(3)].map((e, i) => 
                         <>
-                            <div style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</div>
-                            <br/>
+                            <p style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
                         </>
                     )}
-                    </Description>
+                    </div>
                     {[...Array(3)].map((e, i) => 
                         <>
-                            <div key={i} style={{
+                            <p key={i} style={{
                             display: "grid",
                             gridTemplateColumns: "15% 30%",
                             gap: "10px",
                             paddingTop:"10px"}}>
-                                <div style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</div>
-                                <div style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
-                            </div>
-                            <br/>
+                                <span style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
+                                <span style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
+                            </p>
+                            {/* <br/> */}
                         </>
                     )}
                 </Card>

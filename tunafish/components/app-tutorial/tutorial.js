@@ -9,13 +9,17 @@ import { getFacetCandidates } from '../../functions/schema';
 function SearchTutorial({schema}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState({title:"",content:""});
+    const [facets, setFacets] = useState(null);
 
     const openModal = (content) => {
         setModalContent(content);
         setOpen(!open);
     }
 
-    getFacetCandidates(schema)
+    useEffect(()=>{
+        setFacets(getFacetCandidates(schema));
+    },[schema])
+    
 
     return (
         <>
@@ -26,7 +30,7 @@ function SearchTutorial({schema}){
                 gap: "10px",
                 paddingTop:"10px"
             }}>
-                <Facets openModal={openModal}></Facets>
+                {facets?<Facets openModal={openModal} facets={facets}></Facets>:<></>}
                 <Results openModal={openModal}></Results>
             </div>
             <Modal open={open} setOpen={setOpen}>
@@ -36,6 +40,10 @@ function SearchTutorial({schema}){
                 </Body>
                 <Body>
                     {modalContent.links?.map((link) => <Link href={link.url}>{link.label}</Link>)}
+                </Body>
+                <Body>
+                    <Subtitle>Suggested fields to use as {modalContent.label}</Subtitle>
+                    {modalContent.fields?.map((field) => <p key={field.path}>{field.path}</p>)}
                 </Body>
             </Modal>
             

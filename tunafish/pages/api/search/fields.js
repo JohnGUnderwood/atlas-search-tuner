@@ -74,7 +74,6 @@ function getIndexDef(uri,coll,db,index){
       .then(conn => {
         checkCollections(conn,db,coll)
           .then(check => {
-            console.log(check)
             if(check){
               conn.db(db).collection(coll).listSearchIndexes(index).toArray()
                 .then(response => {

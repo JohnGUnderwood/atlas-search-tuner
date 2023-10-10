@@ -2,13 +2,15 @@ import { H3 } from "@leafygreen-ui/typography";
 import { palette } from '@leafygreen-ui/palette';
 import Tooltip from '@leafygreen-ui/tooltip';
 
-function Facets({openModal}){
+function Facets({openModal,facets}){
     const modalContent = {
         title:"Filtering and Faceting",
         content:`Allow your users to filter their results by category and other attributes.
         Facets have a count for each attribute which is the number of results for that attribute value.
         `,
-        links:[{label:"Search facets example",url:"https://www.mongodb.com/docs/atlas/atlas-search/facet/#example"}]
+        links:[{label:"Search facets example",url:"https://www.mongodb.com/docs/atlas/atlas-search/facet/#example"}],
+        fields:facets,
+        label:"facets"
     }
 
     return (

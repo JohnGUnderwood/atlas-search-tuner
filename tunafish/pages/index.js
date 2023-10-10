@@ -12,7 +12,7 @@ import Banner from '@leafygreen-ui/banner';
 function Home() {
   const [loading, setLoading] = useState(false);
   const [connection, setConnection] = useState({'searchIndex':'default'}); // uri, database, collection, searchIndex
-  const [selectedTab, setSelectedTab] = useState("Index Builder");
+  const [selectedTab, setSelectedTab] = useState(0);
   const [index, setIndex] = useState(null);
   const [schema, setSchema] = useState(null);
   const [error, setError] = useState(null);

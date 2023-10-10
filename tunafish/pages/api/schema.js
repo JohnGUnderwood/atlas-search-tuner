@@ -43,7 +43,7 @@ export default function handler(req, res) {
     if(!req.body.connection){
         res.status(400).send("Missing Connection Details!");
     }else{
-        return getSchema(req.body.connection,10000)
+        return getSchema(req.body.connection,1000)
             .then((response) => {
                 res.status(200).send(response);
             })
