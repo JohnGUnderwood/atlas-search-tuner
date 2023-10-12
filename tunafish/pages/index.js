@@ -5,17 +5,18 @@ import { Spinner } from '@leafygreen-ui/loading-indicator';
 import AppBanner from '../components/banner';
 import MongoDBConnection from '../components/connection';
 import QueryTuner from '../components/query-tuner';
-import IndexBuilder from '../components/index-builder';
+import SearchTutorial from '../components/app-tutorial/tutorial';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
 import Banner from '@leafygreen-ui/banner';
 
 function Home() {
-  const [loading, setLoading] = useState(false);
   const [connection, setConnection] = useState({'searchIndex':'default'}); // uri, database, collection, searchIndex
   const [selectedTab, setSelectedTab] = useState(0);
-  const [index, setIndex] = useState(null);
-  const [schema, setSchema] = useState(null);
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [data, setData] = useState(null)
+
 
   const handleConnectionChange = (name,value) => {
     const detailName = name;
@@ -27,15 +28,16 @@ function Home() {
   }
 
   const handleSubmit = () => {
-    setIndex(null);
+    setData(null);
     setError(null);
     setLoading(true);
-    fetchFieldData(connection)
+    fetchData(connection)
       .then(resp => {
-        setIndex(resp.data);
-        setLoading(false);
+        setData(resp.data)
+        setLoading(false)
+        setError(false);
       })
-      .catch(error => {console.log(`fetchFieldData error ${error}`);setError(error);setLoading(false)});
+      .catch(error => {setError(error);setLoading(false)});
   }
 
   return (
@@ -47,11 +49,11 @@ function Home() {
       <hr/>
       {loading? <Spinner description="Getting Data..."></Spinner> :
         <>
-        {index?
+        {data?
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
             {/* <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab> */}
-            <Tab name="Index Builder"><IndexBuilder connection={connection} schema={schema} setSchema={setSchema}/></Tab>
-            <Tab name="Query Tuner"><QueryTuner fields={index.fields} connection={connection}/></Tab>
+            <Tab name="Index Builder">{data.schema?<SearchTutorial schema={data.schema} connection={connection}/>:<Banner variant="danger">Missing search index definition</Banner> }</Tab>
+            <Tab name="Query Tuner">{data.searchIndex?<QueryTuner searchIndex={data.searchIndex} connection={connection}/>:<Banner variant="danger">Missing collection schema</Banner> }</Tab>
           </Tabs>
           : <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner> : <Banner >Submit Connection Details</Banner>}</>
         }
@@ -62,13 +64,29 @@ function Home() {
   )
 }
 
-function fetchFieldData(conn) {
+function fetchData(conn) {
   return new Promise((resolve,reject) => {
-    axios.get(`api/search/fields?index=${conn.searchIndex}&type=string&type=autocomplete&uri=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}`)
+    axios.post(`api/atlas/connection?`,{connection:conn})
       .then(response => resolve(response))
       .catch((error) => reject(error.response.data)
     )
   });
 }
+
+// function getSchema(connection){
+//   return new Promise((resolve,reject) => {
+//     axios.post('api/atlas/schema',{connection:connection})
+//       .then(response => resolve(response))
+//       .catch((error) => {
+//         console.log(error.response.data);
+//         reject(error.response.data);
+//       })
+//   });
+//   // return new Promise((resolve,reject)=>{
+//   //   var schema = require('../testing/schema')
+//   //   console.log("fetching local schema",schema)
+//   //   resolve(schema)
+//   // });
+// }
 
 export default Home;

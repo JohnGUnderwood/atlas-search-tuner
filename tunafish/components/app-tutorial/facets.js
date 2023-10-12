@@ -10,7 +10,7 @@ function Facets({openModal,facets}){
         `,
         links:[{label:"Search facets example",url:"https://www.mongodb.com/docs/atlas/atlas-search/facet/#example"}],
         fields:facets,
-        label:"facets"
+        type:"facet"
     }
 
     return (
@@ -31,7 +31,7 @@ function Facets({openModal,facets}){
                 Filter category (e.g. 'country')
                 </Tooltip>
             <ul>
-            {[...Array(3)].map((e, i) => 
+            {[...Array(3)].map((e, j) => 
                 <>
                     <div key={i} style={{
                     display: "grid",
