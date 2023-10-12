@@ -8,6 +8,7 @@ import QueryTuner from '../components/query-tuner';
 import SearchTutorial from '../components/app-tutorial/tutorial';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
 import Banner from '@leafygreen-ui/banner';
+import { parseIndex } from '../functions/schema';
 
 function Home() {
   const [connection, setConnection] = useState({'searchIndex':'default'}); // uri, database, collection, searchIndex
@@ -15,8 +16,8 @@ function Home() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [data, setData] = useState(null)
-
+  const [data, setData] = useState(null);
+  const [fields, setFields] = useState(null);
 
   const handleConnectionChange = (name,value) => {
     const detailName = name;
@@ -33,11 +34,21 @@ function Home() {
     setLoading(true);
     fetchData(connection)
       .then(resp => {
-        setData(resp.data)
-        setLoading(false)
+        setData(resp.data);
+        setLoading(false);
         setError(false);
+        const types = parseIndex(resp.data.searchIndex);
+        var newFields = {}
+        ['string','autocomplete'].forEach((type)=>{
+            newFields[type]=types[type];
+        });
+        if(Object.keys(newFields).length > 0 ){
+          setFields(newFields);
+        }
       })
       .catch(error => {setError(error);setLoading(false)});
+    
+    
   }
 
   return (
@@ -52,8 +63,16 @@ function Home() {
         {data?
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
             {/* <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab> */}
-            <Tab name="Index Builder">{data.schema?<SearchTutorial schema={data.schema} connection={connection}/>:<Banner variant="danger">Missing search index definition</Banner> }</Tab>
-            <Tab name="Query Tuner">{data.searchIndex?<QueryTuner searchIndex={data.searchIndex} connection={connection}/>:<Banner variant="danger">Missing collection schema</Banner> }</Tab>
+            <Tab name="Index Builder">
+              {data.schema?
+              <SearchTutorial schema={data.schema} connection={connection} handleConnectionChange={handleConnectionChange}/>
+              :<Banner variant="danger">Missing search index definition</Banner>}
+            </Tab>
+            <Tab name="Query Tuner">
+              {fields?
+              <QueryTuner fields={fields} connection={connection}/>
+              :<Banner variant="danger">Missing search fields</Banner>}
+            </Tab>
           </Tabs>
           : <>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner> : <Banner >Submit Connection Details</Banner>}</>
         }
@@ -66,10 +85,9 @@ function Home() {
 
 function fetchData(conn) {
   return new Promise((resolve,reject) => {
-    axios.post(`api/atlas/connection?`,{connection:conn})
+    axios.post(`api/post/atlas-search/index/connection?`,{connection:conn})
       .then(response => resolve(response))
-      .catch((error) => reject(error.response.data)
-    )
+      .catch((error) => reject(error.response.data))
   });
 }
 

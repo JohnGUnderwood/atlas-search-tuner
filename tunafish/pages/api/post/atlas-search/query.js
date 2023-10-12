@@ -107,11 +107,16 @@ function buildProjection(weights){
 }
 
 async function getResults(conn,pipeline){
-    const client = new MongoClient(conn.uri);
-    const collection = client.db(conn.database).collection(conn.collection)
-    const results = await collection.aggregate(pipeline).toArray();
-    client.close();
-    return results;
+    try{
+        const client = new MongoClient(conn.uri);
+        const collection = client.db(conn.database).collection(conn.collection)
+        const results = await collection.aggregate(pipeline).toArray();
+        return results;
+    }catch(error){
+        throw error
+    }finally{
+        client.close()
+    }
 }
 
 export default async function handler(req, res) {
@@ -129,38 +134,40 @@ export default async function handler(req, res) {
 
     const projectStage = buildProjection(weights);
 
-    return new Promise((resolve, reject) => {
+    if(!req.method === "POST"){
+        console.log(`Method ${req.method} not allowed`)
+        res.status(405).send(`Method ${req.method} not allowed`);
+    }else if(!req.body.connection){
+        console.log(`Request body missing connection parameter`)
+        res.status(400).send(`Request body missing connection parameter`);
+    }else{
         if(!req.body.connection.uri || !req.body.connection.database|| !req.body.connection.collection){
             res.status(400).json({error:"Missing Connection Details!"});
-            return resolve();
+        }else{
+
+            const pipeline = [
+                searchStage,
+                projectStage,
+                {
+                    $addFields:{
+                        score: { $round : [ {$meta:"searchScore"}, 4 ] }
+                    }
+                },
+                {
+                    $skip:skip
+                },
+                {
+                    $limit:limit
+                }
+            ]
+
+            try{
+                const response = await getResults(req.body.connection,pipeline)
+                res.status(200).json({results:response,query:query});
+            }catch(error){
+                res.status(405).json({'error':error,query:query});
+            }
         }
 
-        const pipeline = [
-            searchStage,
-            projectStage,
-            {
-                $addFields:{
-                    score: { $round : [ {$meta:"searchScore"}, 4 ] }
-                }
-            },
-            {
-                $skip:skip
-            },
-            {
-                $limit:limit
-            }
-        ]
-
-        getResults(req.body.connection,pipeline)
-            .then(response => {
-                res.status(200).json({results:response,query:query}).end();
-                return resolve();
-            })
-            .catch(error => {
-                res.json({'error':error,query:query})
-                res.status(405).end();
-                return resolve();
-            });
-
-    });
-  }
+    }
+}

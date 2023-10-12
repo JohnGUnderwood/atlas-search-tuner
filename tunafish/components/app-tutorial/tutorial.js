@@ -10,14 +10,16 @@ import Code from '@leafygreen-ui/code';
 import TextInput from '@leafygreen-ui/text-input';
 import Button from '@leafygreen-ui/button';
 import axios from 'axios';
+import Banner from '@leafygreen-ui/banner';
 
-function SearchTutorial({schema,connection}){
+function SearchTutorial({schema,connection,handleConnectionChange}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState({title:"",content:""});
     const [suggestedFields, setSuggestedFields] = useState({});
     const [fields, setFields] = useState(null);
     const [mappings, setMappings] = useState(null);
-    const [indexName, setIndexName] = useState(null);
+    const [error, setError] = useState(false);
+    const [response, setResponse] = useState(null)
  
     const openModal = (content) => {
         setModalContent(content);
@@ -40,9 +42,15 @@ function SearchTutorial({schema,connection}){
     }
 
     const saveIndex = () => {
-        postIndexMappings(indexName,mappings,connection)
-            .then(resp=>console.log(resp))
-            .catch(err=>console.log(err))
+        postIndexMappings(mappings,connection)
+            .then(resp=> {
+                setError(false);
+                setResponse(resp.data);
+            })
+            .catch(err=> {
+                setError(true);
+                setResponse(err);
+            })
     }
 
     return (
@@ -76,10 +84,15 @@ function SearchTutorial({schema,connection}){
                         <Code language={'javascript'}>
                             {JSON.stringify({mappings:mappings},null,2)}
                         </Code>
-                        <TextInput label="Save Index Name" value={indexName} onChange={(e)=>setIndexName(e.target.value)}></TextInput>
+                        <TextInput label="Save Index Name" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput>
                         <br/>
                         <Button onClick={saveIndex}>Save</Button>
                     </p>
+                    :<></>
+                }
+                {response?
+                    error?<Banner variant="danger">{response}</Banner>
+                    :<Banner>Successfully created search index {response}</Banner>
                     :<></>
                 }
             </Modal>
@@ -124,12 +137,12 @@ function buildSearchIndex(fields){
     return mappings;
 }
 
-function postIndexMappings(name,mappings,connection){
+function postIndexMappings(mappings,connection){
     return new Promise((resolve,reject)=>{
         axios.post(
-            'api/search/index/mappings',
+            'api/post/atlas-search/index/create',
             {
-                name:name,
+                name:connection.searchIndex,
                 mappings:mappings,
                 connection:connection
             }
