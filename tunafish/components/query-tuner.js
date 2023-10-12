@@ -9,14 +9,22 @@ import { H3, Subtitle, Description, InlineCode } from '@leafygreen-ui/typography
 import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
+import Code from '@leafygreen-ui/code';
+import { parseIndex } from '../functions/schema';
 
-function QueryTuner({fields,connection}){
+function QueryTuner({searchIndex,connection}){
     const [searching, setSearching] = useState(false);
     const [queryTerms, setQueryTerms] = useState(null);
     const [weights, setWeights] = useState({});
     const [searchResponse, setSearchResponse] = useState({});
     const [searchPage, setSearchPage] = useState(1);
     const pageSize = 6;
+
+    const types = parseIndex(searchIndex);
+    var fields = {};
+    ['string','autocomplete'].forEach((type)=>{
+        fields[type]=types[type];
+    });
 
     const handleQueryChange = (event) => {
         setSearching(true);
@@ -49,9 +57,9 @@ function QueryTuner({fields,connection}){
                     : <></>
                 }
                 <p>
-                    <InlineCode>
-                    {JSON.stringify(searchResponse.query.searchStage)}
-                    </InlineCode>
+                    <Code language={'javascript'}>
+                        {JSON.stringify(searchResponse.query.searchStage,null,2)}
+                    </Code>
                 </p>
                 <p>
                     <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
@@ -61,32 +69,32 @@ function QueryTuner({fields,connection}){
             }
             </div>
             <div style={{width:"70%", float:"right", paddingTop:"15px"}}>
-            <div>
-                <SearchInput
-                onChange={handleQueryChange}
-                aria-label="some label"
-                style={{marginBottom:"20px"}}
-                ></SearchInput>
-                {searching?
-                <Spinner description="Getting Search Results..."></Spinner>
-                :
-                <>
-                    {searchResponse.results?.map(result=>(
-                    <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
-                        <InlineCode><em>score:</em> {result.score}</InlineCode>
-                        <br/>
-                        <SearchResultFields doc={result}></SearchResultFields>
-                    </Card>
-                    ))}
-                    {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
-                    <SearchResult clickable="false">
-                        <Subtitle>No Results</Subtitle>
-                        <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>
-                    </SearchResult>
+                <div style={{paddingLeft:"15px"}}>
+                    <SearchInput
+                    onChange={handleQueryChange}
+                    aria-label="some label"
+                    style={{marginBottom:"20px"}}
+                    ></SearchInput>
+                    {searching?
+                    <Spinner description="Getting Search Results..."></Spinner>
+                    :
+                    <>
+                        {searchResponse.results?.map(result=>(
+                        <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
+                            <InlineCode><em>score:</em> {result.score}</InlineCode>
+                            <br/>
+                            <SearchResultFields doc={result}></SearchResultFields>
+                        </Card>
+                        ))}
+                        {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
+                        <SearchResult clickable="false">
+                            <Subtitle>No Results</Subtitle>
+                            <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>
+                        </SearchResult>
+                        }
+                    </>
                     }
-                </>
-                }
-            </div>
+                </div>
             </div>
         </div>
     )
@@ -96,8 +104,8 @@ function searchRequest(query, weights, conn, page, rpp) {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(
-          axios.post(`api/search/query?terms=${query}&conn=${encodeURIComponent(conn.uri)}&db=${conn.database}&coll=${conn.collection}&index=${conn.searchIndex}&page=${page}&rpp=${rpp}`,
-            { weights : weights},
+          axios.post(`api/search/query?terms=${query}&page=${page}&rpp=${rpp}`,
+            { weights : weights, connection: conn},
             { headers : 'Content-Type: application/json'}
           )
         );

@@ -106,9 +106,9 @@ function buildProjection(weights){
 
 }
 
-async function getResults(conn,db,coll,pipeline){
-    const client = new MongoClient(conn);
-    const collection = client.db(db).collection(coll)
+async function getResults(conn,pipeline){
+    const client = new MongoClient(conn.uri);
+    const collection = client.db(conn.database).collection(conn.collection)
     const results = await collection.aggregate(pipeline).toArray();
     client.close();
     return results;
@@ -116,7 +116,7 @@ async function getResults(conn,db,coll,pipeline){
 
 export default async function handler(req, res) {
 
-    const index = req.query.index? req.query.index : "default" ;
+    const index = req.body.connection.searchIndex? req.body.connection.searchIndex : "default" ;
     const terms = req.query.terms? req.query.terms : "" ;
     const weights = req.body.weights;
 
@@ -130,7 +130,7 @@ export default async function handler(req, res) {
     const projectStage = buildProjection(weights);
 
     return new Promise((resolve, reject) => {
-        if(!req.query.conn || !req.query.db || !req.query.coll){
+        if(!req.body.connection.uri || !req.body.connection.database|| !req.body.connection.collection){
             res.status(400).json({error:"Missing Connection Details!"});
             return resolve();
         }
@@ -151,7 +151,7 @@ export default async function handler(req, res) {
             }
         ]
 
-        getResults(req.query.conn,req.query.db,req.query.coll,pipeline)
+        getResults(req.body.connection,pipeline)
             .then(response => {
                 res.status(200).json({results:response,query:query}).end();
                 return resolve();

@@ -93,10 +93,46 @@ export function getFacetCandidates(schema){
         if(!evaluateEmbeddingField(fieldTypes[path])){
             const evaluate = evaluateFacetField(fieldTypes[path],schema.count);
             if(evaluate.facet){
+                // facets[path] = evaluate.types
                 facets.push({path:path,types:evaluate.types})
             }
         }
     })
 
     return facets;
+}
+
+// Function which reads in a search index definition and populates a map of field types to field paths.
+// E.g. {"string":['title','body','category'],"stringFacet":["category"]}
+// Handles nested fields.
+function listFieldsFromIndex(typeMap,fieldMappings,parent){
+    const fields = Object.keys(fieldMappings);
+    fields.forEach((field)=>{
+        var path = (parent == null)? field : `${parent}.${field}`;
+        if(Array.isArray(fieldMappings[field])){
+            fieldMappings[field].forEach((fieldType)=>{
+                if(typeMap.hasOwnProperty(fieldType['type'])){
+                typeMap[fieldType['type']].push(path)
+                }else{
+                typeMap[fieldType['type']]=[path]
+                }
+            });
+        }else{
+        if(typeMap.hasOwnProperty(fieldMappings[field]['type'])){
+            typeMap[fieldMappings[field]['type']].push(path)
+        }else{
+            typeMap[fieldMappings[field]['type']]=[path]
+        }
+        }
+        if(fieldMappings[field].hasOwnProperty('fields')){
+            listFieldsFromIndex(typeMap,fieldMappings[field]['fields'],field)
+        }
+    });    
+}
+
+export function parseIndex(indexDef){
+    const fieldMappings = indexDef['mappings']['fields']
+    var typeMap = {}
+    listFieldsFromIndex(typeMap,fieldMappings,null)
+    return typeMap;
 }
