@@ -28,12 +28,12 @@ function QueryTuner({fields,connection}){
           .catch(console.error);
       };
     
-      const handleSearchClick = () => {
+    const handleSearchClick = () => {
         setSearching(true);
         searchRequest(queryTerms, weights, connection, searchPage, pageSize)
-          .then(resp => {setSearchResponse(resp.data);setSearching(false);})
-          .catch(console.error);
-      }
+            .then(resp => {setSearchResponse(resp.data);setSearching(false);})
+            .catch(console.error);
+    }
 
     return (
         <div>

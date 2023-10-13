@@ -11,6 +11,7 @@ import TextInput from '@leafygreen-ui/text-input';
 import Button from '@leafygreen-ui/button';
 import axios from 'axios';
 import Banner from '@leafygreen-ui/banner';
+import { Spinner } from '@leafygreen-ui/loading-indicator';
 
 function SearchTutorial({schema,connection,handleConnectionChange}){
     const [open, setOpen] = useState(false);
@@ -18,23 +19,32 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
     const [suggestedFields, setSuggestedFields] = useState({});
     const [fields, setFields] = useState(null);
     const [mappings, setMappings] = useState(null);
-    const [error, setError] = useState(false);
-    const [response, setResponse] = useState(null)
- 
+    const [createError, setCreateError] = useState(false);
+    const [createIndexResponse, setCreateIndexResponse] = useState(null);
+    const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null});
+    const [results, setResults] = useState(null)
+
     const openModal = (content) => {
         setModalContent(content);
         setOpen(!open);
     }
 
     useEffect(()=>{
-        const facets = getFacetCandidates(schema)
+        const facetCandidates = getFacetCandidates(schema)
         const newSuggestFields = {
             ...suggestedFields,
-            'facet':facets
+            'facet':facetCandidates
         }
         setSuggestedFields(newSuggestFields);
-        if(fields){setMappings(buildSearchIndex(fields))};
-    },[schema,fields])
+        if(fields){
+            setMappings(buildSearchIndex(fields))
+        };
+
+        if(indexStatus.ready){
+            search(fields);
+        }
+
+    },[schema,fields,indexStatus.ready])
     
     const handleFieldToggle = (type,paths) => {
         const fields = suggestedFields[type].filter((field)=>paths.includes(field.path))
@@ -42,15 +52,30 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
     }
 
     const saveIndex = () => {
+        setIndexStatus({waiting:false,ready:false,error:null});
         postIndexMappings(mappings,connection)
             .then(resp=> {
-                setError(false);
-                setResponse(resp.data);
+                setCreateError(false);
+                setCreateIndexResponse(resp.data);
+                getIndexStatus();
             })
             .catch(err=> {
-                setError(true);
-                setResponse(err);
+                setCreateError(true);
+                setCreateIndexResponse(err);
             })
+    }
+
+    const search = (fields) => {
+        searchRequest(fields,connection)
+            .then(resp => setResults(resp))
+            .catch(err => console.log(err));
+    }
+
+    const getIndexStatus = () => {
+        setIndexStatus({waiting:true,ready:false,error:null})
+        postIndexStatus(connection).then(resp => {
+            setIndexStatus({waiting:false,ready:true,error:null})
+        }).catch(err => {setIndexStatus({waiting:false,ready:true,error:err})})
     }
 
     return (
@@ -71,7 +96,7 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                     {modalContent.content}
                 </Body>
                 <Body>
-                    {modalContent.links?.map((link) => <Link href={link.url}>{link.label}</Link>)}
+                    {modalContent.links?.map((link) => <Link key={link.url} href={link.url}>{link.label}</Link>)}
                 </Body>
                 <hr/>
                 <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
@@ -80,19 +105,36 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                     ))}
                 </Combobox>
                 {mappings?
-                    <p style={{paddingLeft:"3px",paddingRight:"3px"}}>
+                    <div style={{paddingLeft:"3px",paddingRight:"3px",paddingTop:"3px"}}>
                         <Code language={'javascript'}>
                             {JSON.stringify({mappings:mappings},null,2)}
                         </Code>
-                        <TextInput label="Save Index Name" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput>
+                        {!indexStatus.waiting?
+                        <><TextInput label="Save Index Name" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput>
                         <br/>
                         <Button onClick={saveIndex}>Save</Button>
-                    </p>
+                        </>:<></>
+                        }
+                    </div>
                     :<></>
                 }
-                {response?
-                    error?<Banner variant="danger">{response}</Banner>
-                    :<Banner>Successfully created search index {response}</Banner>
+                {createIndexResponse?
+                    <div style={{paddingTop:"3px"}}>
+                    {createError?<Banner variant="danger">{createIndexResponse}</Banner>
+                    :<Banner>Successfully created search index {createIndexResponse}</Banner>}
+                    </div>
+                    :<></>
+                }
+                {indexStatus.waiting?
+                    <Spinner description="Waiting for index to build..."></Spinner>:<></>
+                }
+                {indexStatus.ready?
+                    <div style={{paddingTop:"3px"}}>
+                        {indexStatus.error?
+                            <Banner variant="danger">{indexStatus.error}</Banner>
+                            :<Banner>Index is ready. Re-submit connection to load new index.</Banner>
+                        }
+                    </div>
                     :<></>
                 }
             </Modal>
@@ -151,6 +193,43 @@ function postIndexMappings(mappings,connection){
           reject(error.response.data);
         })
     })
+}
+
+function wait(ms) {
+    return new Promise(res => setTimeout(res, ms));
+}
+
+async function postIndexStatus(connection){
+    var done = false;
+    var response;
+    while(!done){
+        try{
+            response = await axios.post('api/post/atlas-search/index/status',{connection:connection});
+            const status = response.data.status;
+            console.log(status)
+            if(status == "READY" || status == "STALE"){
+                done = true;
+            }else if(status == "FAILED"){
+                throw new Error(`Search index '${connection.database}.${connection.collection}:${connection.searchIndex}' failed to build`,{cause:"SearchIndexStatusFailed"})
+            }
+        }catch(error){
+            throw error
+        }
+        await wait(5000)
+    }
+}
+
+function searchRequest(fields, conn) {
+    return new Promise((resolve) => {
+        axios.post(`api/post/atlas-search/query`,
+            { fields : fields, connection: conn},
+            { headers : 'Content-Type: application/json'}
+        ).then(response => resolve(response))
+        .catch((error) => {
+            console.log(error)
+            resolve(error.response.data);
+        })
+    });
 }
 
 export default SearchTutorial;

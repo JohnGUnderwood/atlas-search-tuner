@@ -16,19 +16,6 @@ async function checkCollections(client,db,coll){
     }
   }
 
-  async function createSearchIndex(client,coll,db,index){
-    const searchIndexes = await client.db(db).collection(coll).listSearchIndexes(index).toArray()
-    if(searchIndexes.length > 0){
-      if(searchIndexes[0]['latestDefinition']){
-        return true
-      }else{
-        throw new Error(`No latestDefinition found for '${index}' in '${db}.${coll}'`,{cause:"MissingDefinition"})
-      }
-    }else{
-      return false
-    }
-  }
-
   async function getIndexDef(client,coll,db,index){
     const check = await checkCollections(client,db,coll);
     if(check){
@@ -110,6 +97,18 @@ export default async function handler(req,res){
               }else{
                   console.log(`${req.body} missing required parameters (name,mappings,connection)`)
                   res.status(400).send(`${req.body} missing required parameters (name,mappings,connection)`)
+              }
+            }else if(type == "status"){
+              if(req.body.connection){
+                try{
+                  const response = await client.db(conn.database).collection(conn.collection).listSearchIndexes(req.body.connection.searchIndex).next()
+                  res.status(200).json(response).end();
+                }catch(error){
+                  res.status(400).send(`${error}`)
+                }
+              }else{
+                  console.log(`${req.body} missing required parameters (name,connection)`)
+                  res.status(400).send(`${req.body} missing required parameters (name,connection)`)
               }
             }
           }catch(error){

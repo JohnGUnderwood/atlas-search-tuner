@@ -38,17 +38,18 @@ function Home() {
         setLoading(false);
         setError(false);
         const types = parseIndex(resp.data.searchIndex);
-        var newFields = {}
+        var newFields = {};
         ['string','autocomplete'].forEach((type)=>{
-            newFields[type]=types[type];
+            if(types[type]){
+              newFields[type]=types[type];
+            }
         });
         if(Object.keys(newFields).length > 0 ){
           setFields(newFields);
         }
+        console.log(newFields);
       })
       .catch(error => {setError(error);setLoading(false)});
-    
-    
   }
 
   return (
@@ -62,7 +63,6 @@ function Home() {
         <>
         {data?
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
-            {/* <Tab name="Index Builder"><div style={{position: "absolute", top: "50%",left: "50%"}}>Work In Progress...</div></Tab> */}
             <Tab name="Index Builder">
               {data.schema?
               <SearchTutorial schema={data.schema} connection={connection} handleConnectionChange={handleConnectionChange}/>
