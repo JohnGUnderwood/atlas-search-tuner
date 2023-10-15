@@ -3,8 +3,8 @@ import SearchBar from "./search-bar";
 import Facets from "./facets";
 import Results from "./results";
 import Modal from '@leafygreen-ui/modal';
-import { Subtitle, Body, Link, InlineCode } from '@leafygreen-ui/typography';
-import { getFacetCandidates } from '../../functions/schema';
+import { H3, Subtitle, Body, Link, Description } from '@leafygreen-ui/typography';
+import { getCandidates } from '../../functions/schema';
 import { Combobox, ComboboxOption } from '@leafygreen-ui/combobox';
 import Code from '@leafygreen-ui/code';
 import TextInput from '@leafygreen-ui/text-input';
@@ -12,43 +12,47 @@ import Button from '@leafygreen-ui/button';
 import axios from 'axios';
 import Banner from '@leafygreen-ui/banner';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
+import Card from '@leafygreen-ui/card';
 
 function SearchTutorial({schema,connection,handleConnectionChange}){
     const [open, setOpen] = useState(false);
-    const [modalContent, setModalContent] = useState({title:"",content:""});
-    const [suggestedFields, setSuggestedFields] = useState({});
-    const [fields, setFields] = useState(null);
+    const [modalContent, setModalContent] = useState(null);
+    const [suggestedFields, setSuggestedFields] = useState({facet:null,text:null,autocomplete:null});
+    const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
     const [mappings, setMappings] = useState(null);
     const [createError, setCreateError] = useState(false);
     const [createIndexResponse, setCreateIndexResponse] = useState(null);
     const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null});
-    const [results, setResults] = useState(null)
+    const [facetResults, setFacetResults] = useState(null)
+    const [textResults, setTextResults] = useState(null)
 
     const openModal = (content) => {
+        console.log(fields);
         setModalContent(content);
         setOpen(!open);
     }
 
     useEffect(()=>{
-        const facetCandidates = getFacetCandidates(schema)
-        const newSuggestFields = {
-            ...suggestedFields,
-            'facet':facetCandidates
-        }
-        setSuggestedFields(newSuggestFields);
-        if(fields){
-            setMappings(buildSearchIndex(fields))
-        };
+        const candidates = getCandidates(schema);
+        setSuggestedFields({
+            'facet':candidates.facet,
+            'text':candidates.text,
+            'autocomplete':candidates.autocomplete
+        });
 
         if(indexStatus.ready){
-            search(fields);
+            searchMeta(fields);
+            searchText(fields);
         }
 
     },[schema,fields,indexStatus.ready])
     
     const handleFieldToggle = (type,paths) => {
-        const fields = suggestedFields[type].filter((field)=>paths.includes(field.path))
-        setFields({[type]:fields});
+        const selectedFields = suggestedFields[type].filter((field)=>paths.includes(field.path))
+        const newFields = fields;
+        newFields[type]=selectedFields;
+        setFields(newFields);
+        setMappings(buildSearchIndex(newFields))
     }
 
     const saveIndex = () => {
@@ -65,9 +69,15 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
             })
     }
 
-    const search = (fields) => {
-        searchRequest(fields,connection)
-            .then(resp => setResults(resp))
+    const searchMeta = (fields) => {
+        searchRequest(fields,'facet',connection)
+            .then(resp => {setFacetResults(resp.data);setOpen(false);})
+            .catch(err => console.log(err));
+    }
+
+    const searchText = (fields) => {
+        searchRequest(fields,'text',connection)
+            .then(resp => {setTextResults(resp.data);setOpen(false);})
             .catch(err => console.log(err));
     }
 
@@ -80,16 +90,44 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
 
     return (
         <>
-            <SearchBar/>
+            <SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/>
             <div style={{
                 display: "grid",
                 gridTemplateColumns: "25% 65%",
                 gap: "10px",
                 paddingTop:"10px"
             }}>
-                {suggestedFields.facet?<Facets openModal={openModal} facets={suggestedFields.facet}></Facets>:<></>}
-                <Results openModal={openModal}></Results>
+                {facetResults?.facet?
+                    <div>
+                        <H3>Facets</H3>
+                        {Object.keys(facetResults.facet).map(facet => (
+                            <>
+                            <Subtitle key={facet}>{facet}</Subtitle>
+                            {facetResults.facet[facet].buckets.map(bucket => (
+                                <Description key={bucket._id}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
+                            ))}<br/></>
+                        ))}
+                    </div>
+                    :<></>
+                }
+                {!facetResults && suggestedFields.facet?<Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>:<></>}
+                {textResults?
+                    <div>
+                        <H3>Search Results</H3>
+                        {textResults.map(result =>(
+                            <Card key={result._id} style={{marginBottom:"20px"}}>
+                                {Object.keys(result).filter(k=>k!='_id').map(field=>(
+                                    <><Subtitle key={`${result._id}.${field}`}>{field}</Subtitle>
+                                    <Description>{result[field]}</Description></>
+                                ))}
+                            </Card>
+                        ))}
+                    </div>
+                    :<></>
+                }
+                {!textResults && suggestedFields.text?<Results openModal={openModal} textFields={suggestedFields.text}></Results>:<></>}
             </div>
+            {modalContent?
             <Modal open={open} setOpen={setOpen}>
                 <Subtitle>{modalContent.title}</Subtitle>
                 <Body>
@@ -99,7 +137,7 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                     {modalContent.links?.map((link) => <Link key={link.url} href={link.url}>{link.label}</Link>)}
                 </Body>
                 <hr/>
-                <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
+                <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} initialValue={fields[modalContent.type].map((field)=>field.path)} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
                     {modalContent.fields?.map((field) => (
                         <ComboboxOption key={field.path} value={field.path} displayName={field.path}/>
                     ))}
@@ -132,12 +170,14 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                     <div style={{paddingTop:"3px"}}>
                         {indexStatus.error?
                             <Banner variant="danger">{indexStatus.error}</Banner>
-                            :<Banner>Index is ready. Re-submit connection to load new index.</Banner>
+                            :<Banner>Index is ready. Go to 'Query Tuner' tab to build queries.</Banner>
                         }
                     </div>
                     :<></>
                 }
-            </Modal>
+            </Modal>:<></>
+            }
+            
             
         </>
     )
@@ -147,7 +187,7 @@ function buildSearchIndex(fields){
     // ######### Helpful Comment ########
     //fields should be an object with keys containing array of fields with their types:
     // {
-    //     facet/search/autocomplete: 
+    //     facet/text/autocomplete: 
     //      [
     //         {
     //             path: <full path to field>
@@ -156,25 +196,40 @@ function buildSearchIndex(fields){
     //      ]
     // }
     // ######### Helpful Comment ########
-
-    var mappings = {fields:{}}
-    mappings.dynamic = true;
-
-    fields.facet.forEach((field) => {
-        if(field.types.includes('String')){
-            const mapping = [
-                {type:'stringFacet'},
-                {type:'string',analyzer:"lucene.keyword",indexOptions:"docs",norms:"omit"}
-            ]
-            mappings.fields[field.path] = mapping
-        }else if(field.types.includes('Number')){
-            const mapping = [
-                {type:'numberFacet'},
-                {type:'number'}
-            ]
-            mappings.fields[field.path] = mapping
-        }
-    })
+    var mappings = {fields:{}};
+    mappings.dynamic = false;
+    if(fields.facet){
+        fields.facet.forEach((field) => {
+            if(field.types.includes('String')){
+                const mapping = [
+                    {type:'stringFacet'},
+                    {type:'string',analyzer:"lucene.keyword",indexOptions:"docs",norms:"omit"}
+                ]
+                mappings.fields[field.path] = mapping
+            }else if(field.types.includes('Number')){
+                const mapping = [
+                    {type:'numberFacet'},
+                    {type:'number'}
+                ]
+                mappings.fields[field.path] = mapping
+            }
+        })
+    }
+    if(fields.text){
+        fields.text.forEach((field) => {
+            const mapping = [{type:'string',analyzer:'lucene.standard'}]
+            mappings.fields[field.path] = mapping;
+        });
+    }
+    if(fields.autocomplete){
+        fields.autocomplete.forEach((field) => {
+            if(mappings.fields[field.path]){
+                mappings.fields[field.path].push({type:'autocomplete'});
+            }else{
+                mappings.fields[field.path] = [{type:'autocomplete'}];
+            }
+        });
+    }
 
     return mappings;
 }
@@ -219,10 +274,10 @@ async function postIndexStatus(connection){
     }
 }
 
-function searchRequest(fields, conn) {
+function searchRequest(fields,type,conn) {
     return new Promise((resolve) => {
         axios.post(`api/post/atlas-search/query`,
-            { fields : fields, connection: conn},
+            { fields : fields, connection: conn, type:type},
             { headers : 'Content-Type: application/json'}
         ).then(response => resolve(response))
         .catch((error) => {

@@ -50,27 +50,42 @@ function getAllFields(fields,input){
     return fields;
 }
 
-function evaluateFacetField(fieldTypes,count){
-    // What proportion of the sample must have the field
-    const ratioThreshold = 0.6;
-    // Threshold for uniqueness, facets should have a low number of unique values
-    const uniqueThreshold = 0.05;
-    // Check if the average character length of the field values make it viable as a facet
-    const maxAvgCharLength = 25;
+function evaluateField(fieldTypes,count){
+    // What proportion of the sample must have the field to satisfy type
+    const ratioThreshold = {facet:0.6,text:0.6,autocomplete:0.6};
+    // Threshold for uniqueness, facets should have a low number of unique values, text can be high
+    const uniqueThreshold = {facet:0.05,text:1,autocomplete:1};
+    // Check if the average character length of the field values make it viable as a facet or autocomplete
+    const maxAvgCharLength = {facet:25,autocomplete:50};
     
     var isFacet = false;
+    var isText = false;
+    var isAutocomplete = false;
     var types = [];
 
     fieldTypes.forEach(type => {
         if ('values' in type){
-            if(type.count > ratioThreshold*count && type.unique < uniqueThreshold*type.count && avgLenArrayVals(type.values) <= maxAvgCharLength){
+            if(type.count > ratioThreshold.facet*count && type.unique < uniqueThreshold.facet*type.count && avgLenArrayVals(type.values) <= maxAvgCharLength.facet){
                 isFacet = true 
                 types.push(type.name)          
+            }else if(type.count > ratioThreshold.text && type.unique < uniqueThreshold.text*type.count && type.name=="String"){
+                isText = true
+                if(!types.includes(type.name)){
+                    types.push(type.name)
+                }
             }
+
+            if(type.count > ratioThreshold.autocomplete*count && type.unique < uniqueThreshold.autocomplete*type.count && avgLenArrayVals(type.values) <= maxAvgCharLength.autocomplete && type.name=="String"){
+                isAutocomplete = true;
+                if(!types.includes(type.name)){
+                    types.push(type.name)
+                }
+            }
+
         }
         
     })
-    return {facet:isFacet,types:types}
+    return {facet:isFacet,text:isText,autocomplete:isAutocomplete,types:types}
 }
 
 function evaluateEmbeddingField(fieldTypes){    
@@ -85,21 +100,28 @@ function evaluateEmbeddingField(fieldTypes){
     return isEmbedding
 }
 
-export function getFacetCandidates(schema){
+export function getCandidates(schema){
     const fieldTypes = getAllFields({},schema);
-    const facets = []
+    const facet = []
+    const text = []
+    const autocomplete = []
 
     Object.keys(fieldTypes).forEach(path => {
         if(!evaluateEmbeddingField(fieldTypes[path])){
-            const evaluate = evaluateFacetField(fieldTypes[path],schema.count);
+            const evaluate = evaluateField(fieldTypes[path],schema.count);
             if(evaluate.facet){
-                // facets[path] = evaluate.types
-                facets.push({path:path,types:evaluate.types})
+                facet.push({path:path,types:evaluate.types})
+            }
+            if(evaluate.text){
+                text.push({path:path,types:evaluate.types})
+            }
+            if(evaluate.autocomplete){
+                autocomplete.push({path:path,types:evaluate.types})
             }
         }
     })
 
-    return facets;
+    return {facet:facet,text:text,autocomplete:autocomplete};
 }
 
 // Function which reads in a search index definition and populates a map of field types to field paths.

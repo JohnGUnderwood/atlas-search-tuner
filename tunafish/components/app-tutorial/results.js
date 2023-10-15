@@ -3,16 +3,18 @@ import Card from "@leafygreen-ui/card";
 import { palette } from '@leafygreen-ui/palette';
 import Tooltip from '@leafygreen-ui/tooltip';
 
-function Results({openModal}){
+function Results({openModal,textFields}){
     const modalContent = {
         title:"Show search results / Set query path",
-        content:`You will want to display specific attributes/fields to your users.
+        content:`You will want to search within specific attributes/fields and display them to your users.
         When you configure your search index and queries you will specify how document fields should be treated.
         `,
         links:[
             {label:"Define field mappings",url:"https://www.mongodb.com/docs/atlas/atlas-search/define-field-mappings/"},
             {label:"Search query path",url:"https://www.mongodb.com/docs/atlas/atlas-search/text/#syntax"},
-        ]
+        ],
+        fields:textFields,
+        type:"text"
     }
 
     return (

@@ -41,7 +41,7 @@ function QueryTuner({fields,connection}){
             <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
             <br/>
             <Button onClick={handleSearchClick}>Search</Button>
-            {searchResponse.query?
+            {searchResponse?.query?
                 <div>
                 <br/>
                 <H3>Query used</H3>
@@ -72,14 +72,14 @@ function QueryTuner({fields,connection}){
                     <Spinner description="Getting Search Results..."></Spinner>
                     :
                     <>
-                        {searchResponse.results?.map(result=>(
+                        {searchResponse?.results?.map(result=>(
                         <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
                             <InlineCode><em>score:</em> {result.score}</InlineCode>
                             <br/>
                             <SearchResultFields doc={result}></SearchResultFields>
                         </Card>
                         ))}
-                        {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
+                        {!searchResponse?.results ? <></> : searchResponse.results.length ? <></> : 
                         <SearchResult clickable="false">
                             <Subtitle>No Results</Subtitle>
                             <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>

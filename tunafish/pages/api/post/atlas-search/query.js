@@ -86,7 +86,7 @@ function buildQueryFromWeights(terms,weights){
     return {searchStage:searchStage,msg:msg};
 }
 
-function buildQueryFromFields(fields){
+function buildFacetQueryFromFields(fields){
     var searchOperator = {
         compound:{
             should:[ ]
@@ -136,7 +136,7 @@ function buildQueryFromFields(fields){
     }
 
     const searchStage = {
-        $search:{
+        $searchMeta:{
             facet:{
                 operator:searchOperator,
                 facets:facets
@@ -146,7 +146,7 @@ function buildQueryFromFields(fields){
     return searchStage;
 }
 
-function buildProjection(weights){
+function buildProjectionFromWeights(weights){
     var projectStage = {$project:{_id:0}}
 
     if(weights === undefined || isEmpty(weights)){
@@ -203,7 +203,7 @@ export default async function handler(req, res) {
                         var searchStage = query.searchStage;
                         searchStage['$search']['index'] = index;
 
-                        const projectStage = buildProjection(weights);
+                        const projectStage = buildProjectionFromWeights(weights);
 
                         const pipeline = [
                             searchStage,
@@ -230,37 +230,49 @@ export default async function handler(req, res) {
 
                     }else if(req.body.fields){
                         const fields = req.body.fields;
-                        const projectStage = buildProjection(fields);
-                        const searchStage = buildQueryFromFields(fields);
-                        searchStage['$search']['index'] = index;
-                        const pipeline = [
-                            searchStage,
-                            {
-                                $facet: {
-                                  docs: [
-                                    { $limit: 5 },
-                                    projectStage
-                                  ],
-                                  meta: [
-                                    {$replaceWith: "$$SEARCH_META"},
-                                    {$limit: 1}
-                                  ]
-                                }
-                              },
-                              {
-                                $set: {
-                                  meta: {
-                                    $arrayElemAt: ["$meta", 0]
-                                  }
-                                }
-                              }
-                            ]
-                        try{
-                            const response = await getResults(client,req.body.connection,pipeline)
-                            res.status(200).json(response);
-                        }catch(error){
-                            console.log(JSON.stringify(pipeline))
-                            res.status(405).send(error);
+                        if(req.body.type == "facet"){
+                            const searchStage = buildFacetQueryFromFields(fields);
+                            searchStage['$searchMeta']['index'] = index;
+                            const pipeline = [
+                                searchStage
+                                ]
+                            try{
+                                const response = await getResults(client,req.body.connection,pipeline)
+                                res.status(200).json(response[0]);
+                            }catch(error){
+                                console.log(JSON.stringify(pipeline))
+                                res.status(405).send(error);
+                            }
+                        }else if(req.body.type == "text"){
+                            const projectStage = {$project:{}};
+                            const textFields = fields.text.map(field => field.path);
+                            const autocompleteFields = fields.autocomplete.map(field => field.path);
+                            const fieldPaths = textFields.concat(autocompleteFields);
+                            fieldPaths.forEach(field => {
+                                projectStage['$project'][field]=1;
+                            });
+                            const pipeline =[
+                               {
+                                    $search:{
+                                        wildcard:{
+                                            query:"*",
+                                            allowAnalyzedField:true,
+                                            path:fieldPaths
+                                        }
+                                    }
+                                },
+                                {$limit:5},
+                                projectStage,
+                            ];
+                            try{
+                                const response = await getResults(client,req.body.connection,pipeline)
+                                res.status(200).json(response);
+                            }catch(error){
+                                console.log(JSON.stringify(pipeline))
+                                res.status(405).send(error);
+                            }
+                        }else{
+                            res.status(400).send(`Request body 'type' parameter missing, undefined, or not allowed`);
                         }
 
                     }else{
