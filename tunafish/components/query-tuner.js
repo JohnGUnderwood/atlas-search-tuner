@@ -10,21 +10,14 @@ import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import Code from '@leafygreen-ui/code';
-import { parseIndex } from '../functions/schema';
 
-function QueryTuner({searchIndex,connection}){
+function QueryTuner({fields,connection}){
     const [searching, setSearching] = useState(false);
     const [queryTerms, setQueryTerms] = useState(null);
     const [weights, setWeights] = useState({});
     const [searchResponse, setSearchResponse] = useState({});
     const [searchPage, setSearchPage] = useState(1);
     const pageSize = 6;
-
-    const types = parseIndex(searchIndex);
-    var fields = {};
-    ['string','autocomplete'].forEach((type)=>{
-        fields[type]=types[type];
-    });
 
     const handleQueryChange = (event) => {
         setSearching(true);
@@ -35,12 +28,12 @@ function QueryTuner({searchIndex,connection}){
           .catch(console.error);
       };
     
-      const handleSearchClick = () => {
+    const handleSearchClick = () => {
         setSearching(true);
         searchRequest(queryTerms, weights, connection, searchPage, pageSize)
-          .then(resp => {setSearchResponse(resp.data);setSearching(false);})
-          .catch(console.error);
-      }
+            .then(resp => {setSearchResponse(resp.data);setSearching(false);})
+            .catch(console.error);
+    }
 
     return (
         <div>
@@ -48,7 +41,7 @@ function QueryTuner({searchIndex,connection}){
             <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
             <br/>
             <Button onClick={handleSearchClick}>Search</Button>
-            {searchResponse.query?
+            {searchResponse?.query?
                 <div>
                 <br/>
                 <H3>Query used</H3>
@@ -79,14 +72,14 @@ function QueryTuner({searchIndex,connection}){
                     <Spinner description="Getting Search Results..."></Spinner>
                     :
                     <>
-                        {searchResponse.results?.map(result=>(
+                        {searchResponse?.results?.map(result=>(
                         <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
                             <InlineCode><em>score:</em> {result.score}</InlineCode>
                             <br/>
                             <SearchResultFields doc={result}></SearchResultFields>
                         </Card>
                         ))}
-                        {!searchResponse.results ? <></> : searchResponse.results.length ? <></> : 
+                        {!searchResponse?.results ? <></> : searchResponse.results.length ? <></> : 
                         <SearchResult clickable="false">
                             <Subtitle>No Results</Subtitle>
                             <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>
@@ -102,14 +95,14 @@ function QueryTuner({searchIndex,connection}){
 
 function searchRequest(query, weights, conn, page, rpp) {
     return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(
-          axios.post(`api/search/query?terms=${query}&page=${page}&rpp=${rpp}`,
+        axios.post(`api/post/atlas-search/query?terms=${query}&page=${page}&rpp=${rpp}`,
             { weights : weights, connection: conn},
             { headers : 'Content-Type: application/json'}
-          )
-        );
-      }, 1000);
+        ).then(response => resolve(response))
+        .catch((error) => {
+            console.log(error)
+            resolve(error.response.data);
+        })
     });
 }
 
