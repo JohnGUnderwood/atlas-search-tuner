@@ -9,6 +9,8 @@ Novice Atlas Search users and application developers.
 ## How to run the app
 The app uses the [NextJS framework](https://nextjs.org/) which is based on React and NodeJS. [MongoDB Leafygreen-ui](https://www.mongodb.design/) components have also been used, as well as NextJS API routes.
 
+### Via NodeJS
+
 You can run the app in development mode:
 ```
 $ cd ./tunafish
@@ -21,6 +23,19 @@ $ npm build
 $ npm start
 ```
 The app will run on `http://localhost:3000`
+
+### Via docker
+
+You can run a pre-created image:
+```
+$ docker run -t -i -d -p 5050:3000 --name tunafish --restart unless-stopped graboskyc/tunafish:latest
+```
+
+Or you can build locally in docker
+```
+$ ./build.sh
+```
+The app will run on `http://localhost:5050`
 
 ## How to use the app
 You will need a valid connection string and network access to an Atlas Cluster to connect.
