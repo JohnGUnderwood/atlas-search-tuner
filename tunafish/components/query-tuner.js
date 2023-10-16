@@ -54,9 +54,9 @@ function QueryTuner({fields,connection}){
                         {JSON.stringify(searchResponse.query.searchStage,null,2)}
                     </Code>
                 </p>
-                <p>
+                {/* <p>
                     <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
-                </p>
+                </p> */}
                 </div>
                 : <></>
             }

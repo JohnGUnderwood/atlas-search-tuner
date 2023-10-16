@@ -4,6 +4,7 @@ import Modal from '@leafygreen-ui/modal';
 import Button from '@leafygreen-ui/button';
 import TextInput from '@leafygreen-ui/text-input';
 import { Label, Body} from '@leafygreen-ui/typography'
+import Code from '@leafygreen-ui/code';
 
 function SaveQuery({query,queryTerms}){
     const [name, setName] = useState(null);
@@ -20,7 +21,7 @@ function SaveQuery({query,queryTerms}){
                 <ComboboxOption value="search" displayName="Keyword Match"/>
             </Combobox>
             <TextInput label="Trigger Name" value={name} onChange={(e)=>setName(e.target.value)}></TextInput>
-            <p>{JSON.stringify(query)}</p>
+            <Code language={'javascript'}>{JSON.stringify(query,null,2)}</Code>
             <Button>Submit</Button>
         </Modal>
         </>
