@@ -112,7 +112,6 @@ function buildFacetQueryFromFields(fields){
                 ]
             }
         }
-        // fields.string.forEach(field => {searchOperator.compound.should[0].wildcard.path.push(field.path)})
     }
 
     var facets = {}
@@ -120,12 +119,12 @@ function buildFacetQueryFromFields(fields){
     if(types.includes('facet')){
         fields.facet.forEach(field => {
             if(field.types.includes('String')){
-                facets[field.path.replace(".","_")] = {
+                facets[field.path] = {
                     type:"string",
                     path:field.path
                 }
             }else if(field.types.includes('Number')){
-                facets[field.path.replace(".","_")] = {
+                facets[field.path] = {
                     type:"number",
                     path:field.path,
                     boundaries:[0,5,10,100,1000,10000,100000],
@@ -236,6 +235,7 @@ export default async function handler(req, res) {
                             const pipeline = [
                                 searchStage
                                 ]
+                            console.log(JSON.stringify(pipeline))
                             try{
                                 const response = await getResults(client,req.body.connection,pipeline)
                                 res.status(200).json(response[0]);
@@ -244,7 +244,7 @@ export default async function handler(req, res) {
                                 res.status(405).send(error);
                             }
                         }else if(req.body.type == "text"){
-                            const projectStage = {$project:{}};
+                            const projectStage = {$project:{"_id":0}};
                             const textFields = fields.text.map(field => field.path);
                             const autocompleteFields = fields.autocomplete.map(field => field.path);
                             const fieldPaths = textFields.concat(autocompleteFields);
@@ -257,13 +257,14 @@ export default async function handler(req, res) {
                                         wildcard:{
                                             query:"*",
                                             allowAnalyzedField:true,
-                                            path:fieldPaths
+                                            path:fieldPaths.length>0?fieldPaths:{wildcard:"*"}
                                         }
                                     }
                                 },
                                 {$limit:5},
                                 projectStage,
                             ];
+                            console.log(JSON.stringify(pipeline))
                             try{
                                 const response = await getResults(client,req.body.connection,pipeline)
                                 res.status(200).json(response);
