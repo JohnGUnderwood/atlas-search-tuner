@@ -13,6 +13,8 @@ import axios from 'axios';
 import Banner from '@leafygreen-ui/banner';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import Card from '@leafygreen-ui/card';
+import { buildSearchIndex } from '../../functions/index-definition'
+import SearchResultFields from '../fields';
 
 function SearchTutorial({schema,connection,handleConnectionChange}){
     const [open, setOpen] = useState(false);
@@ -116,10 +118,11 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                         <H3>Search Results</H3>
                         {textResults.map(result =>(
                             <Card key={result._id} style={{marginBottom:"20px"}}>
-                                {Object.keys(result).filter(k=>k!='_id').map(field=>(
+                                <SearchResultFields doc={result}></SearchResultFields>
+                                {/* {Object.keys(result).filter(k=>k!='_id').map(field=>(
                                     <><Subtitle key={`${result._id}.${field}`}>{field}</Subtitle>
                                     <Description>{result[field]}</Description></>
-                                ))}
+                                ))} */}
                             </Card>
                         ))}
                     </div>
@@ -181,57 +184,6 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
             
         </>
     )
-}
-
-function buildSearchIndex(fields){
-    // ######### Helpful Comment ########
-    //fields should be an object with keys containing array of fields with their types:
-    // {
-    //     facet/text/autocomplete: 
-    //      [
-    //         {
-    //             path: <full path to field>
-    //             types: [String/Number/Date/etc..]
-    //         }
-    //      ]
-    // }
-    // ######### Helpful Comment ########
-    var mappings = {fields:{}};
-    mappings.dynamic = false;
-    if(fields.facet){
-        fields.facet.forEach((field) => {
-            if(field.types.includes('String')){
-                const mapping = [
-                    {type:'stringFacet'},
-                    {type:'string',analyzer:"lucene.keyword",indexOptions:"docs",norms:"omit"}
-                ]
-                mappings.fields[field.path] = mapping
-            }else if(field.types.includes('Number')){
-                const mapping = [
-                    {type:'numberFacet'},
-                    {type:'number'}
-                ]
-                mappings.fields[field.path] = mapping
-            }
-        })
-    }
-    if(fields.text){
-        fields.text.forEach((field) => {
-            const mapping = [{type:'string',analyzer:'lucene.standard'}]
-            mappings.fields[field.path] = mapping;
-        });
-    }
-    if(fields.autocomplete){
-        fields.autocomplete.forEach((field) => {
-            if(mappings.fields[field.path]){
-                mappings.fields[field.path].push({type:'autocomplete'});
-            }else{
-                mappings.fields[field.path] = [{type:'autocomplete'}];
-            }
-        });
-    }
-
-    return mappings;
 }
 
 function postIndexMappings(mappings,connection){
