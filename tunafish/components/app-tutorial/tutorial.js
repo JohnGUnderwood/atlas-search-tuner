@@ -16,7 +16,13 @@ import Card from '@leafygreen-ui/card';
 import { buildSearchIndex } from '../../functions/index-definition'
 import SearchResultFields from '../fields';
 
-function SearchTutorial({schema,connection,handleConnectionChange}){
+function SearchTutorial({connection, schema, setSchema}){
+    //Fetching data
+    // const [schema, setSchema] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const [searchIndex, setSearchIndex] = useState("");
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState(null);
     const [suggestedFields, setSuggestedFields] = useState({facet:null,text:null,autocomplete:null});
@@ -28,26 +34,44 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
     const [facetResults, setFacetResults] = useState(null)
     const [textResults, setTextResults] = useState(null)
 
+    useEffect(()=>{
+        if(schema){
+            const candidates = getCandidates(schema);
+            setSuggestedFields({
+                'facet':candidates.facet,
+                'text':candidates.text,
+                'autocomplete':candidates.autocomplete
+            });
+        }else{
+            setLoading(true);
+            setError(null);
+            getSchema(connection).then(resp => {
+                setSchema(resp.data);
+                setLoading(false);
+                setError(null);
+            }).catch(error=>{setError(error);setLoading(false)});
+        }
+        if(indexStatus.ready){
+            searchMeta(fields);
+            searchText(fields);
+        }
+    },[schema,fields,indexStatus.ready])
+
+    const handleBuild = () => {
+        setLoading(true);
+        setError(null);
+        getSchema(connection).then(resp => {
+            setSchema(resp.data);
+            setLoading(false);
+            setError(null);
+        }).catch(error=>{setError(error);setLoading(false)});
+    }
+
     const openModal = (content) => {
         console.log(fields);
         setModalContent(content);
         setOpen(!open);
     }
-
-    useEffect(()=>{
-        const candidates = getCandidates(schema);
-        setSuggestedFields({
-            'facet':candidates.facet,
-            'text':candidates.text,
-            'autocomplete':candidates.autocomplete
-        });
-
-        if(indexStatus.ready){
-            searchMeta(fields);
-            searchText(fields);
-        }
-
-    },[schema,fields,indexStatus.ready])
     
     const handleFieldToggle = (type,paths) => {
         const selectedFields = suggestedFields[type].filter((field)=>paths.includes(field.path))
@@ -59,7 +83,7 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
 
     const saveIndex = () => {
         setIndexStatus({waiting:false,ready:false,error:null});
-        postIndexMappings(mappings,connection)
+        postIndexMappings(mappings,searchIndex,connection)
             .then(resp=> {
                 setCreateError(false);
                 setCreateIndexResponse(resp.data);
@@ -72,26 +96,29 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
     }
 
     const searchMeta = (fields) => {
-        searchRequest(fields,'facet',connection)
+        searchRequest(fields,'facet',searchIndex,connection)
             .then(resp => {setFacetResults(resp.data);setOpen(false);})
             .catch(err => console.log(err));
     }
 
     const searchText = (fields) => {
-        searchRequest(fields,'text',connection)
+        searchRequest(fields,'text',searchIndex,connection)
             .then(resp => {setTextResults(resp.data);setOpen(false);})
             .catch(err => console.log(err));
     }
 
     const getIndexStatus = () => {
         setIndexStatus({waiting:true,ready:false,error:null})
-        postIndexStatus(connection).then(resp => {
+        postIndexStatus(connection,searchIndex).then(resp => {
             setIndexStatus({waiting:false,ready:true,error:null})
         }).catch(err => {setIndexStatus({waiting:false,ready:true,error:err})})
     }
 
     return (
         <>
+        {loading? <Spinner description="Analyzing schema..."></Spinner> :
+            <>
+            {schema? <>
             <SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/>
             <div style={{
                 display: "grid",
@@ -103,11 +130,11 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                     <div>
                         <H3>Facets</H3>
                         {Object.keys(facetResults.facet).map(facet => (
-                            <>
+                            <div style={{paddingLeft:"10px"}}>
                             <Subtitle key={facet}>{facet}</Subtitle>
                             {facetResults.facet[facet].buckets.map(bucket => (
-                                <Description key={bucket._id}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
-                            ))}<br/></>
+                                <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
+                            ))}<br/></div>
                         ))}
                     </div>
                     :<></>
@@ -151,7 +178,7 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
                             {JSON.stringify({mappings:mappings},null,2)}
                         </Code>
                         {!indexStatus.waiting?
-                        <><TextInput label="Save Index Name" value={connection.searchIndex} onChange={(e)=>handleConnectionChange('searchIndex',e.target.value)}></TextInput>
+                        <><TextInput label="Save Index Name" value={searchIndex} onChange={(e)=>setSearchIndex(e.target.value)}></TextInput>
                         <br/>
                         <Button onClick={saveIndex}>Save</Button>
                         </>:<></>
@@ -182,16 +209,28 @@ function SearchTutorial({schema,connection,handleConnectionChange}){
             }
             
             
+            </>:<>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner>:<></>}</>
+            }
+            </>
+        }
         </>
     )
 }
 
-function postIndexMappings(mappings,connection){
+function getSchema(conn) {
+    return new Promise((resolve,reject) => {
+      axios.post(`api/post/atlas-search/index/schema?`,{connection:conn})
+        .then(response => resolve(response))
+        .catch((error) => reject(error.response.data))
+    });
+  }
+
+function postIndexMappings(mappings,searchIndex,connection){
     return new Promise((resolve,reject)=>{
         axios.post(
             'api/post/atlas-search/index/create',
             {
-                name:connection.searchIndex,
+                name:searchIndex,
                 mappings:mappings,
                 connection:connection
             }
@@ -206,18 +245,18 @@ function wait(ms) {
     return new Promise(res => setTimeout(res, ms));
 }
 
-async function postIndexStatus(connection){
+async function postIndexStatus(connection,searchIndex){
     var done = false;
     var response;
     while(!done){
         try{
-            response = await axios.post('api/post/atlas-search/index/status',{connection:connection});
+            response = await axios.post('api/post/atlas-search/index/status',{connection:connection,index:searchIndex});
             const status = response.data.status;
             console.log(status)
             if(status == "READY" || status == "STALE"){
                 done = true;
             }else if(status == "FAILED"){
-                throw new Error(`Search index '${connection.database}.${connection.collection}:${connection.searchIndex}' failed to build`,{cause:"SearchIndexStatusFailed"})
+                throw new Error(`Search index '${connection.database}.${connection.collection}:${searchIndex}' failed to build`,{cause:"SearchIndexStatusFailed"})
             }
         }catch(error){
             throw error
@@ -226,10 +265,10 @@ async function postIndexStatus(connection){
     }
 }
 
-function searchRequest(fields,type,conn) {
+function searchRequest(fields,type,searchIndex,conn) {
     return new Promise((resolve) => {
         axios.post(`api/post/atlas-search/query`,
-            { fields : fields, connection: conn, type:type},
+            { fields : fields, connection: conn, type:type, index:searchIndex},
             { headers : 'Content-Type: application/json'}
         ).then(response => resolve(response))
         .catch((error) => {
