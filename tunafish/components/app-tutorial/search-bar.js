@@ -7,7 +7,7 @@ function SearchBar({openModal,autocompleteFields}){
         To implement this you can enable partial matching using the 'autocomplete' field type.
         `,
         links:[
-            {label:"Autocomplete search operatior",url:"https://www.mongodb.com/docs/atlas/atlas-search/autocomplete/"},
+            {label:"Autocomplete search operator",url:"https://www.mongodb.com/docs/atlas/atlas-search/autocomplete/"},
             {label:"Indexing fields for autocomplete",url:"https://www.mongodb.com/docs/atlas/atlas-search/field-types/autocomplete-type/#std-label-bson-data-types-autocomplete"}
         ],
         fields:autocompleteFields,
