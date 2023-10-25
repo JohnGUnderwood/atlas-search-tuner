@@ -126,7 +126,7 @@ function QueryTuner({connection, indexes, setIndexes}){
                                 style={{marginBottom:"20px"}}
                                 ></SearchInput>
                                 {searching?
-                                <Spinner description="Getting Search Results..."></Spinner>
+                                <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Getting Search Results..."></Spinner></div>
                                 :
                                 <>
                                     {searchResponse?.results?.map(result=>(
@@ -149,7 +149,7 @@ function QueryTuner({connection, indexes, setIndexes}){
                     </div>
                 :<></>
                 }
-            </div>:<>{error?<Banner variant="danger">{JSON.stringify(error)}</Banner>:<>{loading?<Spinner description="Fetching indexes..."></Spinner>:<></>}</>}</>
+            </div>:<>{error?<Banner variant="danger">{JSON.stringify(error)}</Banner>:<>{loading?<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Fetching indexes..."></Spinner></div>:<></>}</>}</>
         }
         </>
     )

@@ -23,24 +23,23 @@ function Results({openModal,textFields}){
             <H3>Search Results</H3>
             {[...Array(3)].map((e, i) => 
                 <Card key={i} style={{marginBottom:"20px"}}>
-                    <Subtitle style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black}}>&nbsp;</Subtitle>
-                    <br/>
-                    <div weight="regular" as="div">
-                    {[...Array(3)].map((e, i) => 
+                    <Subtitle key={`${i}title`} style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black,marginBottom:"15px"}}>&nbsp;</Subtitle>
+                    <div key={`${i}desc`} weight="regular" as="div">
+                    {[...Array(3)].map((e, j) => 
                         <>
-                            <p style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
+                            <p key={`${i}${j}`} style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
                         </>
                     )}
                     </div>
-                    {[...Array(3)].map((e, i) => 
+                    {[...Array(3)].map((e, j) => 
                         <>
-                            <p key={i} style={{
+                            <p key={`${i}${j}`} style={{
                             display: "grid",
                             gridTemplateColumns: "15% 30%",
                             gap: "10px",
                             paddingTop:"10px"}}>
-                                <span style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
-                                <span style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
+                                <span key={`${i}${j}_0`} style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
+                                <span key={`${i}${j}_1`} style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
                             </p>
                             {/* <br/> */}
                         </>
