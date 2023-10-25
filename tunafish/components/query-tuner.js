@@ -34,27 +34,26 @@ function QueryTuner({connection, indexes, setIndexes}){
                 setError(null);
             }).catch(error => {setLoading(false);setError(error)});
         }
-    },[indexes]);
-
-    const handleSubmit = () =>{
-        setSearchResponse({});
-        setWeights({});
-        setQueryTerms(null);
-        setFields(null);
-        fetchIndex(connection,searchIndex).then(resp =>{
-            const types = parseIndex(resp.data);
-            var newFields = {};
-            ['string','autocomplete'].forEach((type)=>{
-                if(types[type]){
-                newFields[type]=types[type];
+        if(searchIndex){
+            setSearchResponse({});
+            setWeights({});
+            setQueryTerms(null);
+            setFields(null);
+            fetchIndex(connection,searchIndex).then(resp =>{
+                const types = parseIndex(resp.data);
+                var newFields = {};
+                ['string','autocomplete'].forEach((type)=>{
+                    if(types[type]){
+                    newFields[type]=types[type];
+                    }
+                });
+                if(Object.keys(newFields).length > 0 ){
+                setFields(newFields);
                 }
+                console.log(newFields);
             });
-            if(Object.keys(newFields).length > 0 ){
-            setFields(newFields);
-            }
-            console.log(newFields);
-        });
-    };
+        }
+    },[searchIndex,indexes]);
 
     const handleQueryChange = (event) => {
         setSearching(true);
@@ -77,6 +76,7 @@ function QueryTuner({connection, indexes, setIndexes}){
         <>{indexes?
             <div>
                 <div style={{
+                        marginTop:"10px",
                         display: "grid",
                         gridTemplateColumns: "55% 5%",
                         gap: "40px"
@@ -91,10 +91,9 @@ function QueryTuner({connection, indexes, setIndexes}){
                             <ComboboxOption key={index} value={index}></ComboboxOption>
                         ))}
                     </Combobox>
-                    <div style={{position:"relative"}}><Button style={{position:"absolute", bottom:"0"}} onClick={handleSubmit}>Connect</Button></div>
                 </div>
                 {fields?
-                    <div>
+                    <div style={{marginTop:"10px"}}>
                         <div style={{width:"30%",float:"left"}}>
                         <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
                         <br/>
