@@ -5,7 +5,7 @@ import { Spinner } from '@leafygreen-ui/loading-indicator';
 import AppBanner from '../components/banner';
 import MongoDBConnection from '../components/connection';
 import QueryTuner from '../components/query-tuner';
-import SearchTutorial from '../components/app-tutorial/tutorial';
+import IndexBuilder from '../components/app-tutorial/index-builder';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
 import Banner from '@leafygreen-ui/banner';
 import { H3, Body } from '@leafygreen-ui/typography';
@@ -14,6 +14,8 @@ function Home() {
   const [connection, setConnection] = useState({}); // uri, database, collection
   const [schema, setSchema] = useState(null);
   const [indexes, setIndexes] = useState(null);
+  const [indexStatus, setIndexStatus] = useState({name:null,waiting:false,ready:false,error:null,results:{facets:null,text:null}});
+  const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
 
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -50,7 +52,7 @@ function Home() {
           <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} handleSubmit={handleSubmit}></MongoDBConnection>
       </AppBanner>
       <hr/>
-      {loading? <Spinner description="Connecting..."></Spinner> :
+      {loading? <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Connecting..."></Spinner></div> :
         <>
         {connected?
           <>
@@ -65,12 +67,13 @@ function Home() {
           </div>
           <Tabs setSelected={setSelectedTab} selected={selectedTab}>
             <Tab name="Index Builder">
-              <SearchTutorial connection={connection} schema={schema} setSchema={setSchema}/>
-              {/* :<Banner variant="danger">Missing search index definition</Banner>} */}
+              <IndexBuilder connection={connection}
+                schema={schema} setSchema={setSchema}
+                indexStatus={indexStatus} setIndexStatus={setIndexStatus}
+                fields={fields} setFields={setFields}/>
             </Tab>
             <Tab name="Query Tuner">
               <QueryTuner connection={connection} indexes={indexes} setIndexes={setIndexes}/>
-              {/* :<Banner variant="danger">Missing search fields</Banner>} */}
             </Tab>
           </Tabs>
           </>

@@ -26,35 +26,33 @@ function QueryTuner({connection, indexes, setIndexes}){
     const pageSize = 6;
 
     useEffect(()=>{
-        if(!indexes){
-            setLoading(true);
-            fetchIndexes(connection).then(resp => {
-                setIndexes(resp.data);
-                setLoading(false);
-                setError(null);
-            }).catch(error => {setLoading(false);setError(error)});
-        }
-    },[indexes]);
-
-    const handleSubmit = () =>{
-        setSearchResponse({});
-        setWeights({});
-        setQueryTerms(null);
-        setFields(null);
-        fetchIndex(connection,searchIndex).then(resp =>{
-            const types = parseIndex(resp.data);
-            var newFields = {};
-            ['string','autocomplete'].forEach((type)=>{
-                if(types[type]){
-                newFields[type]=types[type];
+        setLoading(true);
+        fetchIndexes(connection).then(resp => {
+            setIndexes(resp.data);
+            setLoading(false);
+            setError(null);
+        }).catch(error => {setLoading(false);setError(error)});
+        
+        if(searchIndex){
+            setSearchResponse({});
+            setWeights({});
+            setQueryTerms(null);
+            setFields(null);
+            fetchIndex(connection,searchIndex).then(resp =>{
+                const types = parseIndex(resp.data);
+                var newFields = {};
+                ['string','autocomplete'].forEach((type)=>{
+                    if(types[type]){
+                    newFields[type]=types[type];
+                    }
+                });
+                if(Object.keys(newFields).length > 0 ){
+                setFields(newFields);
                 }
+                console.log(newFields);
             });
-            if(Object.keys(newFields).length > 0 ){
-            setFields(newFields);
-            }
-            console.log(newFields);
-        });
-    };
+        }
+    },[searchIndex,indexes]);
 
     const handleQueryChange = (event) => {
         setSearching(true);
@@ -77,6 +75,7 @@ function QueryTuner({connection, indexes, setIndexes}){
         <>{indexes?
             <div>
                 <div style={{
+                        marginTop:"10px",
                         display: "grid",
                         gridTemplateColumns: "55% 5%",
                         gap: "40px"
@@ -91,10 +90,9 @@ function QueryTuner({connection, indexes, setIndexes}){
                             <ComboboxOption key={index} value={index}></ComboboxOption>
                         ))}
                     </Combobox>
-                    <div style={{position:"relative"}}><Button style={{position:"absolute", bottom:"0"}} onClick={handleSubmit}>Connect</Button></div>
                 </div>
                 {fields?
-                    <div>
+                    <div style={{marginTop:"10px"}}>
                         <div style={{width:"30%",float:"left"}}>
                         <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
                         <br/>
@@ -127,7 +125,7 @@ function QueryTuner({connection, indexes, setIndexes}){
                                 style={{marginBottom:"20px"}}
                                 ></SearchInput>
                                 {searching?
-                                <Spinner description="Getting Search Results..."></Spinner>
+                                <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Getting Search Results..."></Spinner></div>
                                 :
                                 <>
                                     {searchResponse?.results?.map(result=>(
@@ -150,7 +148,7 @@ function QueryTuner({connection, indexes, setIndexes}){
                     </div>
                 :<></>
                 }
-            </div>:<>{error?<Banner variant="danger">{JSON.stringify(error)}</Banner>:<>{loading?<Spinner description="Fetching indexes..."></Spinner>:<></>}</>}</>
+            </div>:<>{error?<Banner variant="danger">{JSON.stringify(error)}</Banner>:<>{loading?<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Fetching indexes..."></Spinner></div>:<></>}</>}</>
         }
         </>
     )

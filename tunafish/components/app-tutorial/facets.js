@@ -37,7 +37,8 @@ function Facets({openModal,facetFields}){
                     display: "grid",
                     gridTemplateColumns: "50% 5%",
                     gap: "10px",
-                    paddingTop:"10px"}}>
+                    paddingTop:"10px",
+                    marginBottom:"15px"}}>
                         <Tooltip key={`tt.${i}.${j}`}
                             align="top"
                             justify="start"
@@ -53,7 +54,6 @@ function Facets({openModal,facetFields}){
                             darkMode={true}
                         >Value count (e.g. '253')</Tooltip>
                     </div>
-                    <br/>
                 </>
             )}
             </ul>

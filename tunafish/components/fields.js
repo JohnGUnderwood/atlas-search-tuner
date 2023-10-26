@@ -18,9 +18,9 @@ function SearchResultFields({doc,parent}){
                         {child}
                         {doc[child].reduce((display, item, index)=>{
                         if(index < 4){
-                            display.push(<Body>{item}</Body>)
+                            display.push(<Body key={item}>{item}</Body>)
                         }else if(index == 5){
-                            display.push(<Body>{item} ... ({doc[child].length-5} more)</Body>)
+                            display.push(<Body key={item}>{item} ... ({doc[child].length-5} more)</Body>)
                         } 
                         return display
                         },[])}

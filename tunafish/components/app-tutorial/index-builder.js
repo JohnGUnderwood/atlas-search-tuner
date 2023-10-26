@@ -16,9 +16,8 @@ import Card from '@leafygreen-ui/card';
 import { buildSearchIndex } from '../../functions/index-definition'
 import SearchResultFields from '../fields';
 
-function SearchTutorial({connection, schema, setSchema}){
+function IndexBuilder({connection, schema, setSchema, indexStatus, setIndexStatus, fields, setFields}){
     //Fetching data
-    // const [schema, setSchema] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -26,13 +25,9 @@ function SearchTutorial({connection, schema, setSchema}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState(null);
     const [suggestedFields, setSuggestedFields] = useState({facet:null,text:null,autocomplete:null});
-    const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
     const [mappings, setMappings] = useState(null);
     const [createError, setCreateError] = useState(false);
     const [createIndexResponse, setCreateIndexResponse] = useState(null);
-    const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null});
-    const [facetResults, setFacetResults] = useState(null)
-    const [textResults, setTextResults] = useState(null)
 
     useEffect(()=>{
         if(schema){
@@ -57,16 +52,6 @@ function SearchTutorial({connection, schema, setSchema}){
         }
     },[schema,fields,indexStatus.ready])
 
-    const handleBuild = () => {
-        setLoading(true);
-        setError(null);
-        getSchema(connection).then(resp => {
-            setSchema(resp.data);
-            setLoading(false);
-            setError(null);
-        }).catch(error=>{setError(error);setLoading(false)});
-    }
-
     const openModal = (content) => {
         console.log(fields);
         setModalContent(content);
@@ -82,12 +67,12 @@ function SearchTutorial({connection, schema, setSchema}){
     }
 
     const saveIndex = () => {
-        setIndexStatus({waiting:false,ready:false,error:null});
+        setIndexStatus({name:searchIndex,waiting:false,ready:false,error:null,results:{facets:null,text:null}});
         postIndexMappings(mappings,searchIndex,connection)
             .then(resp=> {
                 setCreateError(false);
                 setCreateIndexResponse(resp.data);
-                getIndexStatus();
+                getIndexStatus(searchIndex);
             })
             .catch(err=> {
                 setCreateError(true);
@@ -96,29 +81,41 @@ function SearchTutorial({connection, schema, setSchema}){
     }
 
     const searchMeta = (fields) => {
-        searchRequest(fields,'facet',searchIndex,connection)
-            .then(resp => {setFacetResults(resp.data);setOpen(false);})
+        searchRequest(fields,'facet',indexStatus.name,connection)
+            .then(resp => {
+                const newStatus = indexStatus
+                newStatus.results.facets = resp.data.facet
+                console.log(newStatus);
+                setIndexStatus(newStatus);
+                setOpen(false);
+            })
             .catch(err => console.log(err));
     }
 
     const searchText = (fields) => {
-        searchRequest(fields,'text',searchIndex,connection)
-            .then(resp => {setTextResults(resp.data);setOpen(false);})
+        searchRequest(fields,'text',indexStatus.name,connection)
+            .then(resp => {
+                const newStatus = indexStatus
+                newStatus.results.text = resp.data
+                console.log(newStatus);
+                setIndexStatus(newStatus);
+                setOpen(false);
+            })
             .catch(err => console.log(err));
     }
 
-    const getIndexStatus = () => {
-        setIndexStatus({waiting:true,ready:false,error:null})
-        postIndexStatus(connection,searchIndex).then(resp => {
-            setIndexStatus({waiting:false,ready:true,error:null})
-        }).catch(err => {setIndexStatus({waiting:false,ready:true,error:err})})
+    const getIndexStatus = (name) => {
+        setIndexStatus({name:name,waiting:true,ready:false,error:null,results:{facets:null,text:null}})
+        postIndexStatus(connection,name).then(resp => {
+            setIndexStatus({name:name,waiting:false,ready:true,error:null,results:{facets:null,text:null}})
+        }).catch(err => {setIndexStatus({name:name,waiting:false,ready:true,error:err,results:{facets:null,text:null}})})
     }
 
     return (
         <>
-        {loading? <Spinner description="Analyzing schema..."></Spinner> :
+        {loading? <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Analyzing schema..."></Spinner></div> :
             <>
-            {schema? <>
+            {(schema && !indexStatus.waiting)? <>
             <SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/>
             <div style={{
                 display: "grid",
@@ -126,36 +123,32 @@ function SearchTutorial({connection, schema, setSchema}){
                 gap: "10px",
                 paddingTop:"10px"
             }}>
-                {facetResults?.facet?
+                {indexStatus.results.facets?
                     <div>
                         <H3>Facets</H3>
-                        {Object.keys(facetResults.facet).map(facet => (
+                        {Object.keys(indexStatus.results.facets).map(facet => (
                             <div style={{paddingLeft:"10px"}}>
                             <Subtitle key={facet}>{facet}</Subtitle>
-                            {facetResults.facet[facet].buckets.map(bucket => (
+                            {indexStatus.results.facets[facet].buckets.map(bucket => (
                                 <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
                             ))}<br/></div>
                         ))}
                     </div>
                     :<></>
                 }
-                {!facetResults && suggestedFields.facet?<Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>:<></>}
-                {textResults?
+                {(!indexStatus.results.facets && suggestedFields.facet)?<Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>:<></>}
+                {indexStatus.results.text?
                     <div>
                         <H3>Search Results</H3>
-                        {textResults.map(result =>(
+                        {indexStatus.results.text.map(result =>(
                             <Card key={result._id} style={{marginBottom:"20px"}}>
-                                <SearchResultFields doc={result}></SearchResultFields>
-                                {/* {Object.keys(result).filter(k=>k!='_id').map(field=>(
-                                    <><Subtitle key={`${result._id}.${field}`}>{field}</Subtitle>
-                                    <Description>{result[field]}</Description></>
-                                ))} */}
+                                <SearchResultFields key={`${result._id}_fields`} doc={result}></SearchResultFields>
                             </Card>
                         ))}
                     </div>
                     :<></>
                 }
-                {!textResults && suggestedFields.text?<Results openModal={openModal} textFields={suggestedFields.text}></Results>:<></>}
+                {(!indexStatus.results.text && suggestedFields.text)?<Results openModal={openModal} textFields={suggestedFields.text}></Results>:<></>}
             </div>
             {modalContent?
             <Modal open={open} setOpen={setOpen}>
@@ -178,9 +171,9 @@ function SearchTutorial({connection, schema, setSchema}){
                             {JSON.stringify({mappings:mappings},null,2)}
                         </Code>
                         {!indexStatus.waiting?
-                        <><TextInput label="Save Index Name" value={searchIndex} onChange={(e)=>setSearchIndex(e.target.value)}></TextInput>
+                        <><TextInput label="Deploy Index" placeholder="Create a unique name for your search index" value={searchIndex} onChange={(e)=>setSearchIndex(e.target.value)}></TextInput>
                         <br/>
-                        <Button onClick={saveIndex}>Save</Button>
+                        <Button onClick={saveIndex}>Deploy</Button>
                         </>:<></>
                         }
                     </div>
@@ -189,27 +182,18 @@ function SearchTutorial({connection, schema, setSchema}){
                 {createIndexResponse?
                     <div style={{paddingTop:"3px"}}>
                     {createError?<Banner variant="danger">{createIndexResponse}</Banner>
-                    :<Banner>Successfully created search index {createIndexResponse}</Banner>}
-                    </div>
-                    :<></>
-                }
-                {indexStatus.waiting?
-                    <Spinner description="Waiting for index to build..."></Spinner>:<></>
-                }
-                {indexStatus.ready?
-                    <div style={{paddingTop:"3px"}}>
-                        {indexStatus.error?
-                            <Banner variant="danger">{indexStatus.error}</Banner>
-                            :<Banner>Index is ready. Go to 'Query Tuner' tab to build queries.</Banner>
-                        }
+                    :<Banner>Saved search index {createIndexResponse}</Banner>}
                     </div>
                     :<></>
                 }
             </Modal>:<></>
             }
-            
-            
-            </>:<>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner>:<></>}</>
+            </>:<>{error? <Banner variant="danger">{JSON.stringify(error)}</Banner>
+                :<>{indexStatus.waiting?
+                    <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description={`Waiting for index '${indexStatus.name}' to build...`}></Spinner></div>
+                    :<></>
+                }</>
+            }</>
             }
             </>
         }
@@ -245,18 +229,18 @@ function wait(ms) {
     return new Promise(res => setTimeout(res, ms));
 }
 
-async function postIndexStatus(connection,searchIndex){
+async function postIndexStatus(connection,name){
     var done = false;
     var response;
     while(!done){
         try{
-            response = await axios.post('api/post/atlas-search/index/status',{connection:connection,index:searchIndex});
+            response = await axios.post('api/post/atlas-search/index/status',{connection:connection,index:name});
             const status = response.data.status;
             console.log(status)
             if(status == "READY" || status == "STALE"){
                 done = true;
             }else if(status == "FAILED"){
-                throw new Error(`Search index '${connection.database}.${connection.collection}:${searchIndex}' failed to build`,{cause:"SearchIndexStatusFailed"})
+                throw new Error(`Search index '${connection.database}.${connection.collection}:${name}' failed to build`,{cause:"SearchIndexStatusFailed"})
             }
         }catch(error){
             throw error
@@ -278,4 +262,4 @@ function searchRequest(fields,type,searchIndex,conn) {
     });
 }
 
-export default SearchTutorial;
+export default IndexBuilder;
