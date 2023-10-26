@@ -123,7 +123,6 @@ function IndexBuilder({connection, schema, setSchema, indexStatus, setIndexStatu
                 gap: "10px",
                 paddingTop:"10px"
             }}>
-                {/* {facetResults?.facet? */}
                 {indexStatus.results.facets?
                     <div>
                         <H3>Facets</H3>

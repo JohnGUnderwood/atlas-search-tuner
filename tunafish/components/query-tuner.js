@@ -26,14 +26,13 @@ function QueryTuner({connection, indexes, setIndexes}){
     const pageSize = 6;
 
     useEffect(()=>{
-        if(!indexes){
-            setLoading(true);
-            fetchIndexes(connection).then(resp => {
-                setIndexes(resp.data);
-                setLoading(false);
-                setError(null);
-            }).catch(error => {setLoading(false);setError(error)});
-        }
+        setLoading(true);
+        fetchIndexes(connection).then(resp => {
+            setIndexes(resp.data);
+            setLoading(false);
+            setError(null);
+        }).catch(error => {setLoading(false);setError(error)});
+        
         if(searchIndex){
             setSearchResponse({});
             setWeights({});
