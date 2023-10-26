@@ -26,13 +26,6 @@ function QueryTuner({connection, indexes, setIndexes}){
     const pageSize = 6;
 
     useEffect(()=>{
-        setLoading(true);
-        fetchIndexes(connection).then(resp => {
-            setIndexes(resp.data);
-            setLoading(false);
-            setError(null);
-        }).catch(error => {setLoading(false);setError(error)});
-        
         if(searchIndex){
             setSearchResponse({});
             setWeights({});
@@ -51,6 +44,13 @@ function QueryTuner({connection, indexes, setIndexes}){
                 }
                 console.log(newFields);
             });
+        }else if(!indexes){
+            setLoading(true);
+            fetchIndexes(connection).then(resp => {
+                setIndexes(resp.data);
+                setLoading(false);
+                setError(null);
+            }).catch(error => {setLoading(false);setError(error)});
         }
     },[searchIndex,indexes]);
 
