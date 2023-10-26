@@ -18,18 +18,20 @@ import Button from '@leafygreen-ui/button';
 function Home() {
   const [toastOpen, setToastOpen] = useState({success:false,warning:false,import:false,progress:false,note:false});
   const [connection, setConnection] = useState(null); // uri, database, collection
-  const [schema, setSchema] = useState(null);
   const [indexes, setIndexes] = useState(null);
+
   const [searchIndex, setSearchIndex] = useState(null);
   const [createNew, setCreateNew] = useState(false);
-  const [indexDefinition, setIndexDefinition] = useState(null);
+  const [configure, setConfigure] = useState(false);
+  
+  //Index Builder variables
+  const [schema, setSchema] = useState(null);
   const [indexStatus, setIndexStatus] = useState({name:null,waiting:false,ready:false,error:null,results:{facets:null,text:null}});
   const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
 
   const [selectedTab, setSelectedTab] = useState(0);
   // const [loading, setLoading] = useState(false);
   // const [error, setError] = useState(null);
-  const [connected, setConnected] = useState(false);
 
   useEffect(()=>{
     // if(connected){
@@ -123,15 +125,16 @@ function Home() {
           <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} handleSubmit={handleSubmit}></MongoDBConnection>
       </AppBanner>
       <hr/>
-      <div>
+      <>
       {indexes?
         <div style={{
                 width:"45%",
                 marginLeft:"25%",
                 marginTop:"10px",
                 display: "grid",
-                gridTemplateColumns: "50% 50%",
-                gap: "40px"
+                gridTemplateColumns: "50% 50% 90px",
+                gap: "40px",
+                alignItems: "end"
             }}
         >
         
@@ -141,42 +144,36 @@ function Home() {
                 placeholder="Select index"
                 onChange={setSearchIndex}
             >
-              <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value="" displayName="Create new index" onClick={()=>setCreateNew(true)}/>
+              <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
               <ComboboxGroup label="EXISTING INDEXES">
                 {indexes.map(index => (
-                  <ComboboxOption key={index} value={index}></ComboboxOption>
+                  <ComboboxOption key={index} value={index} onClick={()=>setCreateNew(false)}></ComboboxOption>
                 ))}
               </ComboboxGroup>
                 
             </Combobox>
-            {createNew?
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "50% 5%",
-                gap: "10px"
-              }}>
-              <TextInput label="Index name" description='Unique name for a search index' value={searchIndex} onChange={(e)=>setSearchIndex(e.target.value)}></TextInput>
-              <div style={{position:"relative"}}><Button style={{position:"absolute", bottom:"0"}} variant="primary" >Configure</Button></div>
-              </div>
-            :<></>}
+              {createNew?
+                <TextInput label="Index name" description='Unique name for a search index' placeholder='newSearchIndex' value={searchIndex} onChange={setSearchIndex}></TextInput>
+              :<div></div>}
+            <Button variant="primary" onClick={()=>setConfigure(true)}>Configure</Button>
         </div>
         :<></>
       }
-      {indexDefinition?
+      {configure?
         <Tabs setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
-            <IndexBuilder connection={connection}
+            <IndexBuilder connection={connection} searchIndex={searchIndex}
               schema={schema} setSchema={setSchema}
               indexStatus={indexStatus} setIndexStatus={setIndexStatus}
               fields={fields} setFields={setFields}/>
           </Tab>
           <Tab name="Query Tuner">
-            <QueryTuner connection={connection} indexes={indexes} setIndexes={setIndexes}/>
+            <QueryTuner connection={connection} searchIndex={searchIndex}/>
           </Tab>
         </Tabs>
         :<></>
       }
-      </div>
+      </>
       {/* <ToastProvider>
       <Toast
         variant="progress"
