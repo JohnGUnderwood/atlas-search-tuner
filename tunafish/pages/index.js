@@ -16,11 +16,10 @@ import TextInput from '@leafygreen-ui/text-input';
 import Button from '@leafygreen-ui/button';
 
 function Home() {
-  const [toastOpen, setToastOpen] = useState({success:false,warning:false,import:false,progress:false,note:false});
   const [connection, setConnection] = useState(null); // uri, database, collection
+  const [connected, setConnected] = useState(false);
   const [indexes, setIndexes] = useState(null);
-
-  const [searchIndex, setSearchIndex] = useState(null);
+  const [indexName, setIndexName] = useState(null);
   const [createNew, setCreateNew] = useState(false);
   const [configure, setConfigure] = useState(false);
   
@@ -30,25 +29,6 @@ function Home() {
   const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
 
   const [selectedTab, setSelectedTab] = useState(0);
-  // const [loading, setLoading] = useState(false);
-  // const [error, setError] = useState(null);
-
-  useEffect(()=>{
-    // if(connected){
-    //   fetchIndexes(connection).then(resp => {
-    //     setIndexes(resp.data);
-    //   }).catch(error => {
-    //     setToast(
-    //       'warning',
-    //       true,
-    //       {
-    //         title:"Search Indexes Error",
-    //         body:`Failed to fetch search indexes. ${error}`
-    //       }
-    //     );
-    //   });
-    // }
-  },[searchIndex]);
 
   const handleConnectionChange = (name,value) => {
     if(name=="namespace"){
@@ -64,57 +44,20 @@ function Home() {
     }
   }
 
-  const setToast = (variant,open,content) => {
-    const newToast = toastOpen;
-    newToast[variant] = open;
-    setToastOpen(newToast);
-    setToastContent(content)
-  }
-
   const handleSubmit = () => {
-    // setData(null);
-    // setToast(
-    //   'progress',
-    //   true,
-    //   {
-    //     title:"Connecting",
-    //     body:`Establishing connection to ${connection.database}.${connection.collection}`
-    //   }
-    // );
     connect(connection)
       .then(resp => {
-        // setLoading(false);
-        // setToast(
-        //   'success',
-        //   true,
-        //   {
-        //     title:"Connected!",
-        //     body:"Successfully established connection."
-        //   }
-        // );
+        setSuccessToast(true);
         fetchIndexes(connection).then(resp => {
           setIndexes(resp.data);
         }).catch(error => {
-          // setToast(
-          //   'warning',
-          //   true,
-          //   {
-          //     title:"Search Indexes Error",
-          //     body:`Failed to fetch search indexes. ${error}`
-          //   }
-          // );
+          setError(error);
+          setErrorToast(true);
         });
       })
       .catch(error => {
-        // setToast(
-        //   'warning',
-        //   true,
-        //   {
-        //     title:"Error connecting",
-        //     body:`Failed to establish connection ${connection.database}.${connection.collection}. ${error}`
-        //   }
-        // );
-        // setLoading(false);
+        setErrorToast(true);
+        setError(error);
       });
   }
 
@@ -122,74 +65,70 @@ function Home() {
     <>
       <Header/>
       <AppBanner heading="Atlas Search Builder">
-          <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} handleSubmit={handleSubmit}></MongoDBConnection>
+          <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} connected={connected} setConnected={setConnected}
+          // handleSubmit={handleSubmit}
+          />
       </AppBanner>
       <hr/>
-      <>
-      {indexes?
+      {(indexes && !configure)?
         <div style={{
-                width:"45%",
-                marginLeft:"25%",
-                marginTop:"10px",
-                display: "grid",
-                gridTemplateColumns: "50% 50% 90px",
-                gap: "40px",
-                alignItems: "end"
-            }}
+            width:"45%",
+            marginLeft:"25%",
+            marginTop:"10px",
+            display: "grid",
+            gridTemplateColumns: "50% 50% 90px",
+            gap: "40px",
+            alignItems: "end"
+          }}
         >
-        
-            <Combobox
-                label="Search index to use"
-                description='Pick an existing search index or create a new one by picking UI features you want in your search application'
-                placeholder="Select index"
-                onChange={setSearchIndex}
-            >
-              <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
-              <ComboboxGroup label="EXISTING INDEXES">
-                {indexes.map(index => (
-                  <ComboboxOption key={index} value={index} onClick={()=>setCreateNew(false)}></ComboboxOption>
-                ))}
-              </ComboboxGroup>
-                
-            </Combobox>
-              {createNew?
-                <TextInput label="Index name" description='Unique name for a search index' placeholder='newSearchIndex' value={searchIndex} onChange={setSearchIndex}></TextInput>
-              :<div></div>}
-            <Button variant="primary" onClick={()=>setConfigure(true)}>Configure</Button>
+          <Combobox
+            label="Search index to use"
+            description='Pick an existing search index or create a new one by picking UI features you want in your search application'
+            placeholder="Select index"
+            onChange={setIndexName}
+          >
+            <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
+            <ComboboxGroup label="EXISTING INDEXES">
+              {indexes.map(index => (
+                <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false);setConfigure(true)}}></ComboboxOption>
+              ))}
+            </ComboboxGroup>
+              
+          </Combobox>
+          {createNew?
+            <><TextInput label="Index name" description='Unique name for a search index' placeholder='newSearchIndex' value={indexName} onChange={(e)=>{setIndexName(e.target.value)}}></TextInput>
+            <Button variant="primary" onClick={()=>setConfigure(true)}>Configure</Button></>
+          :<div></div>}
         </div>
         :<></>
       }
-      {configure?
+      {(configure && indexName)?
+        <>
+        <div style={{
+            width:"50%",
+            marginTop:"10px",
+            display: "flex",
+            gap: "40px",
+            alignItems: "center"
+          }}
+        >
+          <H3>{`Search index: ${indexName}`}</H3>
+          <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>setConfigure(false)}>Switch index</Button>
+        </div>
         <Tabs setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
-            <IndexBuilder connection={connection} searchIndex={searchIndex}
+            <IndexBuilder connection={connection} indexName={indexName}
               schema={schema} setSchema={setSchema}
               indexStatus={indexStatus} setIndexStatus={setIndexStatus}
               fields={fields} setFields={setFields}/>
           </Tab>
           <Tab name="Query Tuner">
-            <QueryTuner connection={connection} searchIndex={searchIndex}/>
+            <QueryTuner connection={connection} indexName={indexName}/>
           </Tab>
         </Tabs>
+        </>
         :<></>
       }
-      </>
-      {/* <ToastProvider>
-      <Toast
-        variant="progress"
-        title={toastContent.title}
-        body={toastContent.body}
-        open={toastOpen.progress}
-        close={() => setToast('progress',false,{title:"",body:""})}
-      />
-      <Toast
-        variant="warning"
-        title={toastContent.title}
-        body={toastContent.body}
-        open={toastOpen.warning}
-        close={() => setToast('warning',false,{title:"",body:""})}
-      />
-      </ToastProvider> */}
     </>
   )
 }

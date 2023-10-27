@@ -16,12 +16,11 @@ import Card from '@leafygreen-ui/card';
 import { buildSearchIndex } from '../../functions/index-definition'
 import SearchResultFields from '../fields';
 
-function IndexBuilder({connection, schema, setSchema, indexStatus, setIndexStatus, fields, setFields}){
+function IndexBuilder({connection, indexName, schema, setSchema, indexStatus, setIndexStatus, fields, setFields}){
     //Fetching data
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const [searchIndex, setSearchIndex] = useState("");
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState(null);
     const [suggestedFields, setSuggestedFields] = useState({facet:null,text:null,autocomplete:null});
