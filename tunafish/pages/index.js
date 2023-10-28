@@ -9,11 +9,12 @@ import IndexBuilder from '../components/app-tutorial/index-builder';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
 import Banner from '@leafygreen-ui/banner';
 import { H3, Body } from '@leafygreen-ui/typography';
-import { Toast, ToastProvider } from '@leafygreen-ui/toast';
 import { Combobox, ComboboxOption, ComboboxGroup } from '@leafygreen-ui/combobox';
 import Icon from '@leafygreen-ui/icon';
 import TextInput from '@leafygreen-ui/text-input';
 import Button from '@leafygreen-ui/button';
+import { ToastProvider } from '@leafygreen-ui/toast';
+
 
 function Home() {
   const [connection, setConnection] = useState(null); // uri, database, collection
@@ -62,7 +63,7 @@ function Home() {
   }
 
   return (
-    <>
+    <ToastProvider>
       <Header/>
       <AppBanner heading="Atlas Search Builder">
           <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} connected={connected} setConnected={setConnected}
@@ -129,7 +130,7 @@ function Home() {
         </>
         :<></>
       }
-    </>
+    </ToastProvider>
   )
 }
 
