@@ -1,27 +1,17 @@
 import Header from '../components/head';
-import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { Spinner } from '@leafygreen-ui/loading-indicator';
 import AppBanner from '../components/banner';
 import MongoDBConnection from '../components/connection';
 import QueryTuner from '../components/query-tuner';
 import IndexBuilder from '../components/app-tutorial/index-builder';
-import IndexSelector from '../components/select-index';
+import IndexSelector from '../components/index-selector';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
-import Banner from '@leafygreen-ui/banner';
-import { H3, Body } from '@leafygreen-ui/typography';
-import { Combobox, ComboboxOption, ComboboxGroup } from '@leafygreen-ui/combobox';
-import Icon from '@leafygreen-ui/icon';
-import TextInput from '@leafygreen-ui/text-input';
-import Button from '@leafygreen-ui/button';
 import { ToastProvider } from '@leafygreen-ui/toast';
-
 
 function Home() {
   const [connection, setConnection] = useState(null); // uri, database, collection
   const [indexes, setIndexes] = useState(null);
   const [indexName, setIndexName] = useState(null);
-  const [createNew, setCreateNew] = useState(false);
   const [configure, setConfigure] = useState(false);
   
   //Index Builder variables
@@ -31,6 +21,9 @@ function Home() {
 
   const [selectedTab, setSelectedTab] = useState(0);
   
+  useEffect(() => {
+    setIndexName(null);
+  },[indexes]);
 
   const handleConnectionChange = (name,value) => {
     if(name=="namespace"){
@@ -53,7 +46,6 @@ function Home() {
           <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} setIndexes={setIndexes}/>
       </AppBanner>
       <hr/>
-      
       <IndexSelector setConfigure={setConfigure} indexes={indexes} indexName={indexName} setIndexName={setIndexName}/>
       {(configure && indexName)?
         <Tabs setSelected={setSelectedTab} selected={selectedTab}>

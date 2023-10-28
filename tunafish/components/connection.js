@@ -11,16 +11,17 @@ function MongoDBConnection({connection,handleConnectionChange,setIndexes}) {
     const namespace = (connection?.database && connection?.collection)? `${connection.database}.${connection.collection}`:undefined;
     
     const handleSubmit = () => {
+        setIndexes(null);
         pushToast({variant:"progress",title:"Connecting",description:`Trying to connect to ${connection.database}.${connection.collection}`});
         connect(connection)
             .then(resp => {
                 clearStack();
                 pushToast({variant:"success",title:"Connected!",description:`Successfully connected to ${connection.database}.${connection.collection}`}); 
-                // setConnected(true);
                 pushToast({variant:"progress",title:"Fetching indexes",description:`Retrieving search indexes from ${connection.database}.${connection.collection}`});
                 fetchIndexes(connection).then(resp=>{
+                    clearStack();
                     setIndexes(resp.data);
-                    pushToast({variant:"success",title:"Fetched indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
+                    pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
                 })
                 .catch(error=>{
                     clearStack();
@@ -29,7 +30,6 @@ function MongoDBConnection({connection,handleConnectionChange,setIndexes}) {
             })
             .catch(error => {
                 clearStack();
-                // setConnected(false);
                 pushToast({timeout:0,variant:"warning",title:"Failed",description:`Connection to ${connection.database}.${connection.collection} failed. ${error}`})
             })
     }
