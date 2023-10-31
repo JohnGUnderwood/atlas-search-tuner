@@ -3,6 +3,7 @@ import Card from "@leafygreen-ui/card";
 import { palette } from '@leafygreen-ui/palette';
 import Button from "@leafygreen-ui/button";
 import Icon from "@leafygreen-ui/icon";
+import SearchResultFields from "../fields";
 
 function Results({openModal,results,textFields}){
     const modalContent = {

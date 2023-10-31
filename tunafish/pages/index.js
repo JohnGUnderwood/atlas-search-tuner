@@ -9,7 +9,8 @@ import { Tabs, Tab } from '@leafygreen-ui/tabs';
 import { ToastProvider, useToast } from '@leafygreen-ui/toast';
 import axios from 'axios';
 import { getCandidates } from '../functions/schema';
-
+import { parseSearchIndex } from '../functions/index-definition';
+import { reduceSuggestedFields } from '../functions/index-definition';
 
 const Home = () => {
   const { pushToast, popToast, clearStack } = useToast();
@@ -23,7 +24,7 @@ const Home = () => {
   const [configure, setConfigure] = useState(false);
   
   //Index Builder variables
-  const [indexStatus, setIndexStatus] = useState({name:null,waiting:false,ready:false,error:null,results:{facets:null,text:null}});
+  const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null,results:{facets:null,text:null}});
   const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -56,17 +57,29 @@ const Home = () => {
   },[connection.connected]);
 
   useEffect(()=>{
-    if(indexName){
+    if(indexName && suggestedFields){
       fetchIndex(connection,indexName).then(resp => {
-        console.log(`search index ${indexName}`,resp.data);
-        if(resp.data){
-            setMappings(resp.data.mappings);
-        }else{
-            setMappings({fields:{}})
-        }
+          console.log(`search index ${indexName}`,resp.data);
+          if(resp.data){
+              setMappings(resp.data.latestDefinition.mappings);
+              const alreadyIndexedFields = parseSearchIndex(resp.data.latestDefinition.mappings);
+              console.log('indexed fields',alreadyIndexedFields);
+              // reduceSuggestedFields(alreadyIndexedFields,suggestedFields);
+              setFields(alreadyIndexedFields);
+              setIndexStatus({waiting:false,ready:true,error:null,results:{facets:null,text:null}})
+          }else{
+              setMappings({fields:{}})
+          }
       });
-    }
+  }
   },[indexName]);
+
+  useEffect(()=>{
+      if(indexStatus.ready){
+          searchMeta(fields);
+          searchText(fields);
+      }
+  },[indexStatus.ready]);
 
   const handleConnectionChange = (name,value) => {
     if(name=="namespace"){
@@ -82,6 +95,51 @@ const Home = () => {
     }
   }
 
+  const searchMeta = (fields) => {
+    searchRequest(fields,'facet',indexName,connection)
+        .then(resp => {
+            const newStatus = indexStatus
+            newStatus.results.facets = resp.data.facet
+            console.log(newStatus);
+            setIndexStatus(newStatus);
+            setOpen(false);
+        })
+        .catch(err => console.log(err));
+}
+
+const searchText = (fields) => {
+    searchRequest(fields,'text',indexName,connection)
+        .then(resp => {
+            const newStatus = indexStatus
+            newStatus.results.text = resp.data
+            console.log(newStatus);
+            setIndexStatus(newStatus);
+            setOpen(false);
+        })
+        .catch(err => console.log(err));
+}
+
+const saveIndex = () => {
+  setIndexStatus({waiting:false,ready:false,error:null,results:{facets:null,text:null}});
+  postIndexMappings(mappings,indexName,connection)
+      .then(resp=> {
+          setCreateError(false);
+          setCreateIndexResponse(resp.data);
+          getIndexStatus(indexName);
+      })
+      .catch(err=> {
+          setCreateError(true);
+          setCreateIndexResponse(err);
+      })
+}
+
+const getIndexStatus = (name) => {
+  setIndexStatus({name:name,waiting:true,ready:false,error:null,results:{facets:null,text:null}})
+  pollIndexStatus(connection,name).then(resp => {
+      setIndexStatus({name:name,waiting:false,ready:true,error:null,results:{facets:null,text:null}})
+  }).catch(err => {setIndexStatus({name:name,waiting:false,ready:true,error:err,results:{facets:null,text:null}})})
+}
+
   return (
     <>
       <Header/>
@@ -93,9 +151,8 @@ const Home = () => {
       {(configure && indexName)?
         <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
-            <IndexBuilder suggestedFields={suggestedFields} mappings={mappings} setMappings={setMappings} indexName={indexName}
-              indexStatus={indexStatus} setIndexStatus={setIndexStatus}
-              fields={fields} setFields={setFields}/>
+            <IndexBuilder saveIndex={saveIndex} suggestedFields={suggestedFields} mappings={mappings} setMappings={setMappings}
+              indexStatus={indexStatus} fields={fields} setFields={setFields}/>
           </Tab>
           <Tab name="Query Tuner">
             <QueryTuner connection={connection} indexName={indexName}/>
@@ -106,6 +163,47 @@ const Home = () => {
     </>
   )
 }
+
+function wait(ms) {
+  return new Promise(res => setTimeout(res, ms));
+}
+
+async function pollIndexStatus(connection,name){
+  var done = false;
+  var response;
+  while(!done){
+      try{
+          response = await axios.post('api/post/atlas-search/index/status',{connection:connection,name:name});
+          const status = response.data.status;
+          console.log(status)
+          if(status == "READY" || status == "STALE"){
+              done = true;
+          }else if(status == "FAILED"){
+              throw new Error(`Search index '${connection.database}.${connection.collection}:${name}' failed to build`,{cause:"indexNameStatusFailed"})
+          }
+      }catch(error){
+          throw error
+      }
+      await wait(5000)
+  }
+}
+
+function postIndexMappings(mappings,indexName,connection){
+  return new Promise((resolve,reject)=>{
+      axios.post(
+          'api/post/atlas-search/index/create',
+          {
+              name:indexName,
+              mappings:mappings,
+              connection:connection
+          }
+      ).then(response => resolve(response))
+      .catch((error) => {
+        reject(error.response.data);
+      })
+  })
+}
+
 
 function fetchIndexes(conn) {
   return new Promise((resolve,reject) => {
@@ -128,6 +226,19 @@ function getSchema(conn) {
     axios.post(`api/post/atlas-search/index/schema?`,{connection:conn})
       .then(response => resolve(response))
       .catch((error) => reject(error.response.data))
+  });
+}
+
+function searchRequest(fields,type,indexName,conn) {
+  return new Promise((resolve) => {
+      axios.post(`api/post/atlas-search/query`,
+          { fields : fields, connection: conn, type:type, index:indexName},
+          { headers : 'Content-Type: application/json'}
+      ).then(response => resolve(response))
+      .catch((error) => {
+          console.log(error)
+          resolve(error.response.data);
+      })
   });
 }
 
