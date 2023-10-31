@@ -18,7 +18,7 @@ function addNestedMapping(paths,parent,mapping){
     }
 }
 
-export function buildSearchIndex(fields){
+export function buildSearchIndex(mappings,fields){
     // ######### Helpful Comment ########
     //fields should be an object with keys containing array of fields with their types:
     // {
@@ -31,7 +31,7 @@ export function buildSearchIndex(fields){
     //      ]
     // }
     // ######### Helpful Comment ########
-    var mappings = {fields:{}};
+    // var mappings = {fields:{}};
     if(fields.facet.length>0){
         fields.facet.forEach((field) => {
             let mapping;

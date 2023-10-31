@@ -169,7 +169,7 @@ function searchRequest(query, weights, searchIndex, conn, page, rpp) {
 
 function fetchIndex(conn,searchIndex) {
     return new Promise((resolve,reject) => {
-        axios.post(`api/post/atlas-search/index/definition?`,{connection:conn,index:searchIndex})
+        axios.post(`api/post/atlas-search/index/status`,{connection:conn,name:searchIndex})
         .then(response => resolve(response))
         .catch((error) => reject(error.response.data))
     });

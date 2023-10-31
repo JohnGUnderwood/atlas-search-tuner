@@ -4,33 +4,25 @@ import TextInput from "@leafygreen-ui/text-input";
 import Button from "@leafygreen-ui/button";
 import { PasswordInput } from "@leafygreen-ui/password-input";
 
-function MongoDBConnection({connection,handleConnectionChange,setIndexes}) {
+function MongoDBConnection({connection,handleConnectionChange}) {
     const { pushToast, clearStack } = useToast();
 
     const uri = connection?.uri? connection.uri:undefined;
     const namespace = (connection?.database && connection?.collection)? `${connection.database}.${connection.collection}`:undefined;
     
     const handleSubmit = () => {
-        setIndexes(null);
-        pushToast({variant:"progress",title:"Connecting",description:`Trying to connect to ${connection.database}.${connection.collection}`});
+        clearStack();
+        pushToast({variant:"progress",title:"Connecting...",description:`Establishing connection to ${connection.uri.split('@')[1]}`}); 
+        handleConnectionChange('connected',false);
         connect(connection)
             .then(resp => {
                 clearStack();
-                pushToast({variant:"success",title:"Connected!",description:`Successfully connected to ${connection.database}.${connection.collection}`}); 
-                pushToast({variant:"progress",title:"Fetching indexes",description:`Retrieving search indexes from ${connection.database}.${connection.collection}`});
-                fetchIndexes(connection).then(resp=>{
-                    clearStack();
-                    setIndexes(resp.data);
-                    pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
-                })
-                .catch(error=>{
-                    clearStack();
-                    pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
-                });
+                pushToast({variant:"success",title:"Connected!",description:`Successfully connected to ${connection.uri.split('@')[1]}`}); 
+                handleConnectionChange('connected',true);
             })
             .catch(error => {
                 clearStack();
-                pushToast({timeout:0,variant:"warning",title:"Failed",description:`Connection to ${connection.database}.${connection.collection} failed. ${error}`})
+                pushToast({timeout:0,variant:"warning",title:"Failed",description:`Connection to ${connection.uri.split('@')[1]} failed. ${error}`})
             })
     }
 
@@ -60,13 +52,6 @@ function MongoDBConnection({connection,handleConnectionChange,setIndexes}) {
 function connect(conn) {
     return new Promise((resolve,reject) => {
         axios.post(`api/post/atlas-search/index/connect?`,{connection:conn})
-        .then(response => resolve(response))
-        .catch((error) => reject(error.response.data))
-    });
-}
-function fetchIndexes(conn) {
-    return new Promise((resolve,reject) => {
-        axios.post(`api/post/atlas-search/index/list?`,{connection:conn})
         .then(response => resolve(response))
         .catch((error) => reject(error.response.data))
     });

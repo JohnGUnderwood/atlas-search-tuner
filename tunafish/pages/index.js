@@ -6,24 +6,67 @@ import QueryTuner from '../components/query-tuner';
 import IndexBuilder from '../components/app-tutorial/index-builder';
 import IndexSelector from '../components/index-selector';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
-import { ToastProvider } from '@leafygreen-ui/toast';
+import { ToastProvider, useToast } from '@leafygreen-ui/toast';
+import axios from 'axios';
+import { getCandidates } from '../functions/schema';
 
-function Home() {
-  const [connection, setConnection] = useState(null); // uri, database, collection
+
+const Home = () => {
+  const { pushToast, popToast, clearStack } = useToast();
+  const [connection, setConnection] = useState({connected:false}); // uri, database, collection, connected
   const [indexes, setIndexes] = useState(null);
+  const [suggestedFields, setSuggestedFields] = useState(null);
   const [indexName, setIndexName] = useState(null);
+  const [mappings, setMappings] = useState(null);
+
+  // const [index, setIndex] = useState({name:null,definition:null});
   const [configure, setConfigure] = useState(false);
   
   //Index Builder variables
-  const [schema, setSchema] = useState(null);
   const [indexStatus, setIndexStatus] = useState({name:null,waiting:false,ready:false,error:null,results:{facets:null,text:null}});
   const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
 
   const [selectedTab, setSelectedTab] = useState(0);
   
   useEffect(() => {
-    setIndexName(null);
-  },[indexes]);
+    if(connection.connected){
+      setIndexName(null);
+      fetchIndexes(connection).then(resp=>{
+          setIndexes(resp.data);
+          pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
+      })
+      .catch(error=>{
+          pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
+      });
+      getSchema(connection).then(resp => {
+        // setSchema();
+        pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
+        const candidates = getCandidates(resp.data);
+        setSuggestedFields({
+            'facet':candidates.facet,
+            'text':candidates.text,
+            'autocomplete':candidates.autocomplete
+        });
+
+      }).catch(error=>{
+        pushToast({timeout:0,variant:"warning",title:"Schema failed",description:`Failed to get schema for ${connection.database}.${connection.collection}. ${error}`})
+      });
+    }
+    
+  },[connection.connected]);
+
+  useEffect(()=>{
+    if(indexName){
+      fetchIndex(connection,indexName).then(resp => {
+        console.log(`search index ${indexName}`,resp.data);
+        if(resp.data){
+            setMappings(resp.data.mappings);
+        }else{
+            setMappings({fields:{}})
+        }
+      });
+    }
+  },[indexName]);
 
   const handleConnectionChange = (name,value) => {
     if(name=="namespace"){
@@ -40,18 +83,17 @@ function Home() {
   }
 
   return (
-    <ToastProvider>
+    <>
       <Header/>
       <AppBanner heading="Atlas Search Builder">
-          <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange} setIndexes={setIndexes}/>
+          <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange}/>
       </AppBanner>
       <hr/>
-      <IndexSelector setConfigure={setConfigure} indexes={indexes} indexName={indexName} setIndexName={setIndexName}/>
+      <IndexSelector indexes={indexes} setConfigure={setConfigure} indexName={indexName} setIndexName={setIndexName}/>
       {(configure && indexName)?
-        <Tabs setSelected={setSelectedTab} selected={selectedTab}>
+        <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
-            <IndexBuilder connection={connection} indexName={indexName}
-              schema={schema} setSchema={setSchema}
+            <IndexBuilder suggestedFields={suggestedFields} mappings={mappings} setMappings={setMappings} indexName={indexName}
               indexStatus={indexStatus} setIndexStatus={setIndexStatus}
               fields={fields} setFields={setFields}/>
           </Tab>
@@ -61,8 +103,38 @@ function Home() {
         </Tabs>
         :<></>
       }
-    </ToastProvider>
+    </>
   )
 }
 
-export default Home;
+function fetchIndexes(conn) {
+  return new Promise((resolve,reject) => {
+      axios.post(`api/post/atlas-search/index/list`,{connection:conn})
+      .then(response => resolve(response))
+      .catch((error) => reject(error.response.data))
+  });
+}
+
+function fetchIndex(conn,searchIndex) {
+  return new Promise((resolve,reject) => {
+      axios.post(`api/post/atlas-search/index/status`,{connection:conn,name:searchIndex})
+      .then(response => resolve(response))
+      .catch((error) => reject(error.response.data))
+  });
+}
+
+function getSchema(conn) {
+  return new Promise((resolve,reject) => {
+    axios.post(`api/post/atlas-search/index/schema?`,{connection:conn})
+      .then(response => resolve(response))
+      .catch((error) => reject(error.response.data))
+  });
+}
+
+export default function App(){
+  return (
+    <ToastProvider>
+      <Home/>
+    </ToastProvider>
+  )
+}
