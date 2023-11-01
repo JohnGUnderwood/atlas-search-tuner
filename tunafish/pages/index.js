@@ -12,7 +12,9 @@ import { getCandidates } from '../functions/schema';
 import { parseSearchIndex } from '../functions/index-definition';
 import { reduceSuggestedFields } from '../functions/index-definition';
 import Code from '@leafygreen-ui/code';
-import { H3 } from '@leafygreen-ui/typography';
+import { H3, Subtitle, Description } from '@leafygreen-ui/typography';
+import Card from '@leafygreen-ui/card';
+import SearchResultFields from '../components/fields';
 
 const Home = () => {
   const { pushToast, popToast, clearStack } = useToast();
@@ -34,15 +36,20 @@ const Home = () => {
   useEffect(() => {
     if(connection.connected){
       setIndexName(null);
+      const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
       fetchIndexes(connection).then(resp=>{
           setIndexes(resp.data);
+          popToast(fetchingIndexes);
           pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
       })
       .catch(error=>{
+          popToast(fetchingIndexes)
           pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
       });
+      const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
       getSchema(connection).then(resp => {
         // setSchema();
+        popToast(fetchingSchema);
         pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
         const candidates = getCandidates(resp.data);
         setSuggestedFields({
@@ -52,6 +59,7 @@ const Home = () => {
         });
 
       }).catch(error=>{
+        popToast(fetchingSchema);
         pushToast({timeout:0,variant:"warning",title:"Schema failed",description:`Failed to get schema for ${connection.database}.${connection.collection}. ${error}`})
       });
     }
@@ -65,14 +73,13 @@ const Home = () => {
           if(resp.data){
               setMappings(resp.data.latestDefinition.mappings);
               const alreadyIndexedFields = parseSearchIndex(resp.data.latestDefinition.mappings);
-              // reduceSuggestedFields(alreadyIndexedFields,suggestedFields);
               setFields(alreadyIndexedFields);
               setIndexStatus({waiting:false,ready:true,error:null,results:{facets:null,text:null}})
               //Index exists so take user to Query Tuner
-              setSelectedTab(1);
+              // setSelectedTab(1);
           }else{
               //Index does not exist so take user to Index Builder
-              setSelectedTab(0);
+              // setSelectedTab(0);
               setMappings({fields:{}})
           }
       });
@@ -163,29 +170,45 @@ const getIndexStatus = (name) => {
             <QueryTuner connection={connection} indexName={indexName}/>
           </Tab>
         </Tabs>
-        :<>{indexName && mappings && fields?
+        :<>{indexName && indexStatus.ready?
           <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
             <Tab name="Index Definition">
-              {fields.facet.length>0?<>
-              <H3>Facet Fields</H3>
-              <Code language={'javascript'}>{JSON.stringify(fields.facet.map(field => field.path))}</Code>
-              </>
-              :<></>}
-              {fields.text.length>0?<>
-              <H3>Text Fields</H3>
-              <Code language={'javascript'}>{JSON.stringify(fields.text.map(field => field.path))}</Code>
-              </>
-              :<></>}
-              {fields.autocomplete.length>0?<>
-              <H3>Autocomplete Fields</H3>
-              <Code language={'javascript'}>{JSON.stringify(fields.autocomplete.map(field => field.path))}</Code>
-              </>
-              :<></>}
-              <H3>Index Definition</H3>
-              <Code language={'javascript'}>
-                  {JSON.stringify({mappings:mappings},null,2)}
-              </Code>
-            </Tab>
+            <div style={{
+                display: "grid",
+                gridTemplateColumns: "20% 40% 40%",
+                gap: "10px",
+                paddingTop:"10px"
+                }}>
+                  <Card>
+                    {indexStatus.results.facets?Object.keys(indexStatus.results.facets).map(facet => (
+                        <div style={{paddingLeft:"10px"}}>
+                            <Subtitle key={facet}>{facet}</Subtitle>
+                                {indexStatus.results.facets[facet].buckets.map(bucket => (
+                                    <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
+                                ))}<br/>
+                        </div>
+                    ))
+                    :<></>}
+                  </Card>
+                  <Card>
+                  {indexStatus.results.text?.map(result =>(
+                      <Card key={result._id} style={{marginBottom:"20px"}}>
+                          <SearchResultFields key={`${result._id}_fields`} doc={result}></SearchResultFields>
+                      </Card>
+                  ))}
+                  </Card>
+                  {mappings?
+                    <Card>
+                        <div style={{height:"100%"}}>
+                            <Code language={'javascript'} style={{height:"80%"}}>
+                                {JSON.stringify({mappings:mappings},null,2)}
+                            </Code>
+                        </div>
+                    </Card>
+                    :<></>
+                }
+            </div>
+              </Tab>
             <Tab name="Query Tuner">
               <QueryTuner connection={connection} indexName={indexName}/>
             </Tab>

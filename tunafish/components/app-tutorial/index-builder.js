@@ -61,8 +61,8 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexS
                 gap: "10px",
                 paddingTop:"10px"
                 }}>
-                <Facets openModal={openModal} facets={indexStatus.results.facets} facetFields={suggestedFields.facet}></Facets>
-                <Results openModal={openModal} results={indexStatus.results.text} textFields={suggestedFields.text}></Results>      
+                <Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>
+                <Results openModal={openModal} textFields={suggestedFields.text}></Results>      
                 {mappings?
                     <Card>
                         <div style={{height:"100%"}}>
