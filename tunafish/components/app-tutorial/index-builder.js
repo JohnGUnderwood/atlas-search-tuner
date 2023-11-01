@@ -24,7 +24,6 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexS
     const [createIndexResponse, setCreateIndexResponse] = useState(null);
 
     const openModal = (content) => {
-        console.log(fields);
         setModalContent(content);
         setOpen(!open);
     }
@@ -36,6 +35,13 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexS
         setFields(newFields);
         setMappings(buildSearchIndex(mappings,newFields))
     }
+
+    useEffect(()=>{
+        if(fields){
+            console.log("use effect fields",fields);
+            setMappings(buildSearchIndex(mappings,fields));
+        }
+    },[fields]);
 
     return (
         
@@ -85,7 +91,7 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexS
                             <ComboboxOption key={field.path} value={field.path} displayName={field.path}/>
                         ))}
                     </Combobox>
-                    <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>setOpen(false)}>Done</Button>
+                    <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>{setOpen(false),setMappings(buildSearchIndex(mappings,fields));}}>Done</Button>
                 </Modal>:<></>
             }
             </>

@@ -35,7 +35,7 @@ function IndexSelector({setConfigure,indexes,indexName,setIndexName}){
                     <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
                         <ComboboxGroup label="EXISTING INDEXES">
                         {indexes.map(index => (
-                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false);setConfigure(true)}}></ComboboxOption>
+                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false);setConfigure(false)}}></ComboboxOption>
                         ))}
                         </ComboboxGroup>
                 </Combobox>:

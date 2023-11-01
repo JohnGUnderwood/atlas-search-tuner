@@ -11,6 +11,8 @@ import axios from 'axios';
 import { getCandidates } from '../functions/schema';
 import { parseSearchIndex } from '../functions/index-definition';
 import { reduceSuggestedFields } from '../functions/index-definition';
+import Code from '@leafygreen-ui/code';
+import { H3 } from '@leafygreen-ui/typography';
 
 const Home = () => {
   const { pushToast, popToast, clearStack } = useToast();
@@ -63,11 +65,14 @@ const Home = () => {
           if(resp.data){
               setMappings(resp.data.latestDefinition.mappings);
               const alreadyIndexedFields = parseSearchIndex(resp.data.latestDefinition.mappings);
-              console.log('indexed fields',alreadyIndexedFields);
               // reduceSuggestedFields(alreadyIndexedFields,suggestedFields);
               setFields(alreadyIndexedFields);
               setIndexStatus({waiting:false,ready:true,error:null,results:{facets:null,text:null}})
+              //Index exists so take user to Query Tuner
+              setSelectedTab(1);
           }else{
+              //Index does not exist so take user to Index Builder
+              setSelectedTab(0);
               setMappings({fields:{}})
           }
       });
@@ -100,7 +105,7 @@ const Home = () => {
         .then(resp => {
             const newStatus = indexStatus
             newStatus.results.facets = resp.data.facet
-            console.log(newStatus);
+            console.log("new indexstatus",newStatus);
             setIndexStatus(newStatus);
             setOpen(false);
         })
@@ -112,7 +117,7 @@ const searchText = (fields) => {
         .then(resp => {
             const newStatus = indexStatus
             newStatus.results.text = resp.data
-            console.log(newStatus);
+            console.log("new indexstatus",newStatus);
             setIndexStatus(newStatus);
             setOpen(false);
         })
@@ -158,7 +163,35 @@ const getIndexStatus = (name) => {
             <QueryTuner connection={connection} indexName={indexName}/>
           </Tab>
         </Tabs>
-        :<></>
+        :<>{indexName && mappings && fields?
+          <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
+            <Tab name="Index Definition">
+              {fields.facet.length>0?<>
+              <H3>Facet Fields</H3>
+              <Code language={'javascript'}>{JSON.stringify(fields.facet.map(field => field.path))}</Code>
+              </>
+              :<></>}
+              {fields.text.length>0?<>
+              <H3>Text Fields</H3>
+              <Code language={'javascript'}>{JSON.stringify(fields.text.map(field => field.path))}</Code>
+              </>
+              :<></>}
+              {fields.autocomplete.length>0?<>
+              <H3>Autocomplete Fields</H3>
+              <Code language={'javascript'}>{JSON.stringify(fields.autocomplete.map(field => field.path))}</Code>
+              </>
+              :<></>}
+              <H3>Index Definition</H3>
+              <Code language={'javascript'}>
+                  {JSON.stringify({mappings:mappings},null,2)}
+              </Code>
+            </Tab>
+            <Tab name="Query Tuner">
+              <QueryTuner connection={connection} indexName={indexName}/>
+            </Tab>
+          </Tabs>
+          :<></>
+        }</>
       }
     </>
   )

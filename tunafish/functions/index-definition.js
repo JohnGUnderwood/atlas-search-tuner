@@ -123,17 +123,15 @@ export function parseSearchIndex(mappings){
 }
 
 export function reduceSuggestedFields(fields,suggestedFields){
-    console.log('suggested fields before',suggestedFields);
     // Remove parsed fields from suggested fields.
     for(const type of ['facet','text','autocomplete']){
-        for(const field in fields[type]){
+        for(const field of fields[type]){
             const check = checkDocArrayByKey(suggestedFields[type],'path',field.path)
             if(check.found){
-               suggestedFields[indexType].splice(check.at,1);
+               suggestedFields[type].splice(check.at,1);
             }
         }
     }
-    console.log('suggested fields after',suggestedFields);
 }
 
 export function buildSearchIndex(mappings,fields){
