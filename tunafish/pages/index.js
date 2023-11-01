@@ -15,6 +15,7 @@ import Code from '@leafygreen-ui/code';
 import { H3, Subtitle, Description } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import SearchResultFields from '../components/fields';
+import { Spinner } from '@leafygreen-ui/loading-indicator';
 
 const Home = () => {
   const { pushToast, popToast, clearStack } = useToast();
@@ -23,19 +24,28 @@ const Home = () => {
   const [suggestedFields, setSuggestedFields] = useState(null);
   const [indexName, setIndexName] = useState(null);
   const [mappings, setMappings] = useState(null);
-
-  // const [index, setIndex] = useState({name:null,definition:null});
-  const [configure, setConfigure] = useState(false);
-  
-  //Index Builder variables
-  const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null,results:{facets:null,text:null}});
-  const [fields, setFields] = useState({facet:[],text:[],autocomplete:[]});
-
+  const [builder, setBuilder] = useState(false);
+  const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null});
+  const [facets, setFacets] = useState(null);
+  const [results, setResults] = useState(null);
+  const [selectedFields, setSelectedFields] = useState({facet:[],text:[],autocomplete:[]});
   const [selectedTab, setSelectedTab] = useState(0);
+  const [loading, setLoading] = useState({facets:null,results:null,schema:null});
   
+  const resetIndexVariables = () =>{
+    setIndexName(null);
+    setMappings(null);
+    setSelectedFields(null);
+    setIndexStatus({waiting:false,ready:false,error:null});
+    setResults(null);
+    setFacets(null);
+    setLoading({facets:null,results:null,schema:null});
+  }
+
   useEffect(() => {
     if(connection.connected){
-      setIndexName(null);
+      resetIndexVariables();
+      setIndexes(null);
       const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
       fetchIndexes(connection).then(resp=>{
           setIndexes(resp.data);
@@ -47,8 +57,9 @@ const Home = () => {
           pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
       });
       const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
+      setLoading({...loading,schema:true});
       getSchema(connection).then(resp => {
-        // setSchema();
+        setLoading({...loading,schema:null})
         popToast(fetchingSchema);
         pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
         const candidates = getCandidates(resp.data);
@@ -67,29 +78,26 @@ const Home = () => {
   },[connection.connected]);
 
   useEffect(()=>{
-    if(indexName && suggestedFields){
+    if(!indexName){
+      resetIndexVariables();
+    }else if(indexName && suggestedFields){
       fetchIndex(connection,indexName).then(resp => {
-          console.log(`search index ${indexName}`,resp.data);
           if(resp.data){
               setMappings(resp.data.latestDefinition.mappings);
               const alreadyIndexedFields = parseSearchIndex(resp.data.latestDefinition.mappings);
-              setFields(alreadyIndexedFields);
-              setIndexStatus({waiting:false,ready:true,error:null,results:{facets:null,text:null}})
-              //Index exists so take user to Query Tuner
-              // setSelectedTab(1);
+              setSelectedFields(alreadyIndexedFields);
+              setIndexStatus({...indexStatus,ready:true})
           }else{
-              //Index does not exist so take user to Index Builder
-              // setSelectedTab(0);
               setMappings({fields:{}})
           }
       });
-  }
+    }
   },[indexName]);
 
   useEffect(()=>{
       if(indexStatus.ready){
-          searchMeta(fields);
-          searchText(fields);
+          searchMeta(selectedFields);
+          searchText(selectedFields);
       }
   },[indexStatus.ready]);
 
@@ -100,39 +108,39 @@ const Home = () => {
       handleConnectionChange('database',database);
       handleConnectionChange('collection',collection);
     }else{
-      setConnection(connection => ({
-        ...connection,
-        [name]:value
-      }));
+      setConnection(connection => ({...connection,[name]:value}));
     }
   }
 
   const searchMeta = (fields) => {
+    setLoading({...loading,facets:true});
     searchRequest(fields,'facet',indexName,connection)
         .then(resp => {
-            const newStatus = indexStatus
-            newStatus.results.facets = resp.data.facet
-            console.log("new indexstatus",newStatus);
-            setIndexStatus(newStatus);
-            setOpen(false);
+          setLoading({...loading,facets:false});
+          setFacets(resp.data.facet);
         })
-        .catch(err => console.log(err));
-}
+        .catch(err => {
+          setLoading({...loading,facets:false});
+          console.log(err);
+        });
+  }
 
 const searchText = (fields) => {
-    searchRequest(fields,'text',indexName,connection)
-        .then(resp => {
-            const newStatus = indexStatus
-            newStatus.results.text = resp.data
-            console.log("new indexstatus",newStatus);
-            setIndexStatus(newStatus);
-            setOpen(false);
-        })
-        .catch(err => console.log(err));
+  setLoading({...loading,results:true});
+  searchRequest(fields,'text',indexName,connection)
+      .then(resp => {
+        setLoading({...loading,results:false});
+        setResults(resp.data);
+        console.log("results.text",resp.data);
+      })
+      .catch(err => {
+        setLoading({...loading,results:false});
+        console.log(err);
+      });
 }
 
 const saveIndex = () => {
-  setIndexStatus({waiting:false,ready:false,error:null,results:{facets:null,text:null}});
+  setIndexStatus({waiting:false,ready:false,error:null});
   postIndexMappings(mappings,indexName,connection)
       .then(resp=> {
           setCreateError(false);
@@ -146,10 +154,10 @@ const saveIndex = () => {
 }
 
 const getIndexStatus = (name) => {
-  setIndexStatus({name:name,waiting:true,ready:false,error:null,results:{facets:null,text:null}})
+  setIndexStatus({...indexStatus,waiting:true})
   pollIndexStatus(connection,name).then(resp => {
-      setIndexStatus({name:name,waiting:false,ready:true,error:null,results:{facets:null,text:null}})
-  }).catch(err => {setIndexStatus({name:name,waiting:false,ready:true,error:err,results:{facets:null,text:null}})})
+      setIndexStatus({...indexStatus,waiting:false})
+  }).catch(err => {setIndexStatus({...indexStatus,waiting:false,error:err})})
 }
 
   return (
@@ -159,12 +167,16 @@ const getIndexStatus = (name) => {
           <MongoDBConnection connection={connection} handleConnectionChange={handleConnectionChange}/>
       </AppBanner>
       <hr/>
-      <IndexSelector indexes={indexes} setConfigure={setConfigure} indexName={indexName} setIndexName={setIndexName}/>
-      {(configure && indexName)?
+      {connection.connected?
+        <>{!loading.schema?<IndexSelector indexes={indexes} setBuilder={setBuilder} indexName={indexName} setIndexName={setIndexName}/>
+        :<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Analyzing schema...'></Spinner></div>}</>
+        :<></>
+      }
+      {(builder && indexName)?
         <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
             <IndexBuilder saveIndex={saveIndex} suggestedFields={suggestedFields} mappings={mappings} setMappings={setMappings}
-              indexStatus={indexStatus} fields={fields} setFields={setFields}/>
+              selectedFields={selectedFields} setSelectedFields={setSelectedFields}/>
           </Tab>
           <Tab name="Query Tuner">
             <QueryTuner connection={connection} indexName={indexName}/>
@@ -179,24 +191,37 @@ const getIndexStatus = (name) => {
                 gap: "10px",
                 paddingTop:"10px"
                 }}>
-                  <Card>
-                    {indexStatus.results.facets?Object.keys(indexStatus.results.facets).map(facet => (
-                        <div style={{paddingLeft:"10px"}}>
-                            <Subtitle key={facet}>{facet}</Subtitle>
-                                {indexStatus.results.facets[facet].buckets.map(bucket => (
-                                    <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
-                                ))}<br/>
-                        </div>
-                    ))
-                    :<></>}
-                  </Card>
-                  <Card>
-                  {indexStatus.results.text?.map(result =>(
-                      <Card key={result._id} style={{marginBottom:"20px"}}>
-                          <SearchResultFields key={`${result._id}_fields`} doc={result}></SearchResultFields>
-                      </Card>
-                  ))}
-                  </Card>
+                  {loading.facets?
+                    <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting facets...'></Spinner></div>
+                    :<Card>
+                      {facets?
+                        Object.keys(facets).map(facet => (
+                            <div style={{paddingLeft:"10px"}}>
+                                <Subtitle key={facet}>{facet}</Subtitle>
+                                    {facets[facet].buckets.map(bucket => (
+                                        <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
+                                    ))}<br/>
+                            </div>
+                        ))
+                        :<></>
+                      }
+                    </Card>
+                  }
+                  {loading.results?
+                    <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting results...'></Spinner></div>
+                    :<Card>
+                      {selectedFields.autocomplete?<><Subtitle>Autocomplete Fields</Subtitle>
+                      <Description>{JSON.stringify(selectedFields.autocomplete.map(field => field.path))}</Description></>:<></>}
+                      {selectedFields.text?<><Subtitle>Search Fields</Subtitle>
+                      <Description>{JSON.stringify(selectedFields.text.map(field => field.path))}</Description></>:<></>}
+                      <Subtitle>Example result</Subtitle>
+                      {results?.map(result =>(
+                        <Card key={result._id} style={{marginBottom:"20px"}}>
+                            <SearchResultFields key={`${result._id}_fields`} doc={result}></SearchResultFields>
+                        </Card>
+                      ))}
+                    </Card>
+                  }
                   {mappings?
                     <Card>
                         <div style={{height:"100%"}}>
@@ -206,7 +231,7 @@ const getIndexStatus = (name) => {
                         </div>
                     </Card>
                     :<></>
-                }
+                  }
             </div>
               </Tab>
             <Tab name="Query Tuner">

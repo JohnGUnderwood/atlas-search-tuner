@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Icon from '@leafygreen-ui/icon';
 import { H3 } from '@leafygreen-ui/typography';
 
-function IndexSelector({setConfigure,indexes,indexName,setIndexName}){
+function IndexSelector({setBuilder,indexes,indexName,setIndexName}){
     const [createNew, setCreateNew] = useState(false);
     const [name, setName] = useState(indexName);
 
@@ -35,7 +35,7 @@ function IndexSelector({setConfigure,indexes,indexName,setIndexName}){
                     <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
                         <ComboboxGroup label="EXISTING INDEXES">
                         {indexes.map(index => (
-                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false);setConfigure(false)}}></ComboboxOption>
+                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false);setBuilder(false)}}></ComboboxOption>
                         ))}
                         </ComboboxGroup>
                 </Combobox>:
@@ -49,7 +49,7 @@ function IndexSelector({setConfigure,indexes,indexName,setIndexName}){
                 </Combobox>}
                 {createNew?
                 <><TextInput label="Index name" description='Unique name for a search index' placeholder='newSearchIndex' value={name} onChange={(e)=>{handleNameInput(e.target.value)}}></TextInput>
-                <Button variant="primary" onClick={()=>{setConfigure(true);setIndexName(name);setName(null);setCreateNew(false);}}>Configure</Button></>
+                <Button variant="primary" onClick={()=>{setBuilder(true);setIndexName(name);setName(null);setCreateNew(false);}}>Configure</Button></>
                 :<div></div>}
             </div>
         :<>{indexName?
@@ -62,7 +62,7 @@ function IndexSelector({setConfigure,indexes,indexName,setIndexName}){
                 }}
                 >
                 <H3>{`Search index: ${indexName}`}</H3>
-                <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>{setConfigure(false),setIndexName(null)}}>Change index</Button>
+                <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>{setBuilder(false),setIndexName(null)}}>Change index</Button>
                 </div>
                 :<></>
             }</>

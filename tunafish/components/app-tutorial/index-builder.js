@@ -17,11 +17,9 @@ import Card from '@leafygreen-ui/card';
 import SearchResultFields from '../fields';
 
 
-function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexStatus, fields, setFields}){
+function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, selectedFields, setSelectedFields}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState(null);
-    const [createError, setCreateError] = useState(false);
-    const [createIndexResponse, setCreateIndexResponse] = useState(null);
 
     const openModal = (content) => {
         setModalContent(content);
@@ -29,19 +27,17 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexS
     }
     
     const handleFieldToggle = (type,paths) => {
-        const selectedFields = suggestedFields[type].filter((field)=>paths.includes(field.path))
-        const newFields = fields;
-        newFields[type]=selectedFields;
-        setFields(newFields);
+        const selection = suggestedFields[type].filter((field)=>paths.includes(field.path));
+        setSelectedFields({...selectedFields,[type]:selection});
         setMappings(buildSearchIndex(mappings,newFields))
     }
 
     useEffect(()=>{
-        if(fields){
-            console.log("use effect fields",fields);
-            setMappings(buildSearchIndex(mappings,fields));
+        if(selectedFields){
+            console.log("use effect fields",selectedFields);
+            setMappings(buildSearchIndex(mappings,selectedFields));
         }
-    },[fields]);
+    },[selectedFields]);
 
     return (
         
@@ -86,12 +82,12 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, indexS
                         {modalContent.links?.map((link) => <Link key={link.url} href={link.url}>{link.label}</Link>)}
                     </Body>
                     <hr/>
-                    <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} initialValue={fields[modalContent.type].map((field)=>field.path)} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
+                    <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} initialValue={selectedFields[modalContent.type].map((field)=>field.path)} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
                         {modalContent.fields?.map((field) => (
                             <ComboboxOption key={field.path} value={field.path} displayName={field.path}/>
                         ))}
                     </Combobox>
-                    <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>{setOpen(false),setMappings(buildSearchIndex(mappings,fields));}}>Done</Button>
+                    <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>{setOpen(false),setMappings(buildSearchIndex(mappings,selectedFields));}}>Done</Button>
                 </Modal>:<></>
             }
             </>

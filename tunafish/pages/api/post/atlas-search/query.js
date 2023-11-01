@@ -244,7 +244,7 @@ export default async function handler(req, res) {
                                 res.status(405).send(error);
                             }
                         }else if(req.body.type == "text"){
-                            const projectStage = {$project:{"_id":0}};
+                            const projectStage = {$project:{"_id":1}};
                             const textFields = fields.text.map(field => field.path);
                             const autocompleteFields = fields.autocomplete.map(field => field.path);
                             const fieldPaths = textFields.concat(autocompleteFields);
@@ -252,16 +252,7 @@ export default async function handler(req, res) {
                                 projectStage['$project'][field]=1;
                             });
                             const pipeline =[
-                               {
-                                    $search:{
-                                        wildcard:{
-                                            query:"*",
-                                            allowAnalyzedField:true,
-                                            path:fieldPaths.length>0?fieldPaths:{wildcard:"*"}
-                                        }
-                                    }
-                                },
-                                {$limit:5},
+                                {$limit:1},
                                 projectStage,
                             ];
                             console.log(JSON.stringify(pipeline))
