@@ -30,7 +30,7 @@ const Home = () => {
   const [results, setResults] = useState(null);
   const [selectedFields, setSelectedFields] = useState({facet:[],text:[],autocomplete:[]});
   const [selectedTab, setSelectedTab] = useState(0);
-  const [loading, setLoading] = useState({facets:null,results:null,schema:null});
+  const [loading, setLoading] = useState({facets:null,results:null});
   
   const resetIndexVariables = () =>{
     setIndexName(null);
@@ -39,7 +39,7 @@ const Home = () => {
     setIndexStatus({waiting:false,ready:false,error:null});
     setResults(null);
     setFacets(null);
-    setLoading({facets:null,results:null,schema:null});
+    setLoading({facets:null,results:null});
   }
 
   useEffect(() => {
@@ -56,23 +56,6 @@ const Home = () => {
           popToast(fetchingIndexes)
           pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
       });
-      const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
-      setLoading({...loading,schema:true});
-      getSchema(connection).then(resp => {
-        setLoading({...loading,schema:null})
-        popToast(fetchingSchema);
-        pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
-        const candidates = getCandidates(resp.data);
-        setSuggestedFields({
-            'facet':candidates.facet,
-            'text':candidates.text,
-            'autocomplete':candidates.autocomplete
-        });
-
-      }).catch(error=>{
-        popToast(fetchingSchema);
-        pushToast({timeout:0,variant:"warning",title:"Schema failed",description:`Failed to get schema for ${connection.database}.${connection.collection}. ${error}`})
-      });
     }
     
   },[connection.connected]);
@@ -80,7 +63,7 @@ const Home = () => {
   useEffect(()=>{
     if(!indexName){
       resetIndexVariables();
-    }else if(indexName && suggestedFields){
+    }else if(indexName){
       fetchIndex(connection,indexName).then(resp => {
           if(resp.data){
               setMappings(resp.data.latestDefinition.mappings);
@@ -89,6 +72,21 @@ const Home = () => {
               setIndexStatus({...indexStatus,ready:true})
           }else{
               setMappings({fields:{}})
+              const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
+              getSchema(connection).then(resp => {
+                popToast(fetchingSchema);
+                pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
+                const candidates = getCandidates(resp.data);
+                setSuggestedFields({
+                    'facet':candidates.facet,
+                    'text':candidates.text,
+                    'autocomplete':candidates.autocomplete
+                });
+
+              }).catch(error=>{
+                popToast(fetchingSchema);
+                pushToast({timeout:0,variant:"warning",title:"Schema failed",description:`Failed to get schema for ${connection.database}.${connection.collection}. ${error}`})
+              });
           }
       });
     }
@@ -168,8 +166,7 @@ const getIndexStatus = (name) => {
       </AppBanner>
       <hr/>
       {connection.connected?
-        <>{!loading.schema?<IndexSelector indexes={indexes} setBuilder={setBuilder} indexName={indexName} setIndexName={setIndexName}/>
-        :<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Analyzing schema...'></Spinner></div>}</>
+        <IndexSelector indexes={indexes} setBuilder={setBuilder} indexName={indexName} setIndexName={setIndexName}/>
         :<></>
       }
       {(builder && indexName)?
