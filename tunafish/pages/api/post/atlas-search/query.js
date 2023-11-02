@@ -10,7 +10,7 @@ function isEmpty(obj) {
     return true;
   }
 
-function buildQueryFromWeights(terms,weights){
+function buildQueryFromWeights(terms,weights,filter){
     var msg = [];
     if(weights === undefined || isEmpty(weights)){
         msg.push('No field weights defined. Searched using wildcard')
@@ -30,9 +30,46 @@ function buildQueryFromWeights(terms,weights){
     var searchStage = {
       $search:{
         compound:{
-          should:[],
+          must:[],
         }
       }
+    }
+
+    if(filter){
+        console.log(filter);
+        const type = filter.name.split('_')[0];
+          // Fieldname might have '_' in it
+        const path = filter.name.split('_').slice(1).join('_');
+        console.log(type,path,filter.value);
+        if(type == 'date'){
+            searchStage['$search']['compound']['filter'] = [
+                {
+                    equals:{
+                        value:new Date(filter.value),
+                        path:path
+                    }
+                }
+            ]
+        }else if(type == 'number'){
+            searchStage['$search']['compound']['filter'] = [
+                {
+                    equals:{
+                        value:parseFloat(filter.value),
+                        path:path
+                    }
+                }
+            ]
+        }else if(type == 'string'){
+            searchStage['$search']['compound']['filter'] = [
+                {
+                    text:{
+                        query:filter.value,
+                        path:path
+                    }
+                }
+            ]
+        }
+        
     }
     
     let stringTypes = Object.keys(weights).filter(type => ['text','autocomplete'].includes(type));
@@ -47,7 +84,7 @@ function buildQueryFromWeights(terms,weights){
                 finalWeight = -1/weight
             }
             if(type == 'text'){
-                searchStage['$search']['compound']['should'].push(
+                searchStage['$search']['compound']['must'].push(
                     {
                         text:{
                             query:terms,
@@ -57,7 +94,7 @@ function buildQueryFromWeights(terms,weights){
                     }
                 )
             }else if(type == "autocomplete"){
-                searchStage['$search']['compound']['should'].push(
+                searchStage['$search']['compound']['must'].push(
                     {
                         autocomplete:{
                             query:terms,
@@ -72,17 +109,13 @@ function buildQueryFromWeights(terms,weights){
         });
     });
 
-    if(searchStage['$search']['compound']['should'].length == 0){
-        searchStage = {
-            $search:{
-                text:{
-                    query:terms,
-                    path:{wildcard:"*"}
-                }
-            }
+    if(searchStage['$search']['compound']['must'].length == 0){
+        if(terms != ""){
+            searchStage['$search'].compound.must.push({text:{query:terms,path:{wildcard:"*"}}})
+        }else{
+            searchStage['$search'].compound.must.push({wildcard:{query:"*",path:{wildcard:"*"},allowAnalyzedField: true}})
         }
     }
-
 
     var searchMetaStage = {
         $searchMeta:{
@@ -92,20 +125,20 @@ function buildQueryFromWeights(terms,weights){
             }
         }
     }
-    console.log(weights);
+
     let facetTypes = Object.keys(weights).filter(type => !['text','autocomplete'].includes(type));
     facetTypes.forEach((type) => {
         let fields = Object.keys(weights[type]);
         fields.forEach((field) => {
             if(type == 'stringFacet'){
-                searchMetaStage['$searchMeta']['facet']['facets']['str'+field]= {
+                searchMetaStage['$searchMeta']['facet']['facets']['string_'+field]= {
                     type : "string",
                     path : field,
                     numBuckets : parseInt(weights[type][field]),
                 }
             }else if(type == "numberFacet"){
                 const boundaries = weights[type][field].split(',').map(w => parseInt(w));
-                searchMetaStage['$searchMeta']['facet']['facets']['num'+field]= {
+                searchMetaStage['$searchMeta']['facet']['facets']['number_'+field]= {
                     type : "number",
                     path : field,
                     boundaries : boundaries,
@@ -113,7 +146,7 @@ function buildQueryFromWeights(terms,weights){
                 }
             }else if(type == "dateFacet"){
                 const boundaries = weights[type][field].split(',').map(w => new Date(w));
-                searchMetaStage['$searchMeta']['facet']['facets']['num'+field]= {
+                searchMetaStage['$searchMeta']['facet']['facets']['date_'+field]= {
                     type : "date",
                     path : field,
                     boundaries : boundaries,
@@ -124,9 +157,6 @@ function buildQueryFromWeights(terms,weights){
             }
         });
     });
-
-    console.log(searchMetaStage);
-
 
     return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
 }
@@ -238,11 +268,12 @@ export default async function handler(req, res) {
                     if(req.body.weights){
                         const terms = req.query.terms? req.query.terms : "" ;
                         const weights = req.body.weights;
-
+                        const filter = req.body.filter? req.body.filter : null;
+                        
                         const limit = req.query.rpp? parseInt(req.query.rpp) : 6;
                         const skip = req.query.page? parseInt(req.query.page-1)*limit : 0;
 
-                        const query = buildQueryFromWeights(terms,weights);
+                        const query = buildQueryFromWeights(terms,weights,filter);
                         var searchStage = query.searchStage;
                         var searchMetaStage = query.searchMetaStage;
                         searchStage['$search']['index'] = index;
