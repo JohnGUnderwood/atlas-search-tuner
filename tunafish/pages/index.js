@@ -194,10 +194,10 @@ const getIndexStatus = (name) => {
                     :<Card>
                       {facets?
                         Object.keys(facets).map(facet => (
-                            <div style={{paddingLeft:"10px"}}>
+                            <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
                                 <Subtitle key={facet}>{facet}</Subtitle>
                                     {facets[facet].buckets.map(bucket => (
-                                        <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{paddingRight:"5px"}}>{bucket._id}</span><span>({bucket.count})</span></Description>
+                                        <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{paddingRight:"5px"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
                                     ))}<br/>
                             </div>
                         ))
