@@ -46,7 +46,7 @@ function buildQueryFromWeights(terms,weights){
             }else{
                 finalWeight = -1/weight
             }
-            if(type == 'string'){
+            if(type == 'text'){
                 searchStage['$search']['compound']['should'].push(
                     {
                         text:{

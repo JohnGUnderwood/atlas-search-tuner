@@ -5,38 +5,32 @@ import { Subtitle, Label } from '@leafygreen-ui/typography';
 function SelectFieldWeights({fields,weights,setWeights}){
 
     const handleSliderChange = (weight, newValue) => {
-        const [type,field] = weight;
-        var typeWeights = weights[type];
-        typeWeights[field] = newValue
-        setWeights(weights => ({
-          ...weights,
-          [type]: typeWeights
-        }));
-      };
+      const [type,field] = weight;
+      var typeWeights = weights[type];
+      typeWeights[field] = newValue
+      setWeights(weights => ({
+        ...weights,
+        [type]: typeWeights
+      }));
+    };
     
-      const handleFieldToggle = (value) => {
-        const fields = value;
-        var newWeights = {};
-        if (fields.length >0){
-          fields.forEach((field) => {
-            const ftype = field.split('_')[0];
-            // Fieldname might have '_' in it
-            const fname = field.split('_').slice(1).join('_');
-            if(weights[ftype]){
-              if(weights[ftype][fname]){
-                if(ftype in newWeights){
-                  newWeights[ftype][fname] = weights[ftype][fname];
-                }else{
-                  newWeights[ftype] = {};
-                  newWeights[ftype][fname] = weights[ftype][fname];
-                }
+    const handleFieldToggle = (value) => {
+      const fields = value;
+      var newWeights = {};
+      console.log(fields);
+      console.log(weights);
+      if (fields.length >0){
+        fields.forEach((field) => {
+          const ftype = field.split('_')[0];
+          // Fieldname might have '_' in it
+          const fname = field.split('_').slice(1).join('_');
+          if(weights[ftype]){
+            if(weights[ftype][fname]){
+              if(ftype in newWeights){
+                newWeights[ftype][fname] = weights[ftype][fname];
               }else{
-                if(ftype in newWeights){
-                  newWeights[ftype][fname] = 0;
-                }else{
-                  newWeights[ftype] = {};
-                  newWeights[ftype][fname] = 0;
-                }
+                newWeights[ftype] = {};
+                newWeights[ftype][fname] = weights[ftype][fname];
               }
             }else{
               if(ftype in newWeights){
@@ -46,13 +40,21 @@ function SelectFieldWeights({fields,weights,setWeights}){
                 newWeights[ftype][fname] = 0;
               }
             }
-    
-          });
-          setWeights(newWeights);
-        }else{
-          setWeights(newWeights);
-        }
-      };
+          }else{
+            if(ftype in newWeights){
+              newWeights[ftype][fname] = 0;
+            }else{
+              newWeights[ftype] = {};
+              newWeights[ftype][fname] = 0;
+            }
+          }
+  
+        });
+        setWeights(newWeights);
+      }else{
+        setWeights(newWeights);
+      }
+    };
 
     return (
     <>
@@ -61,7 +63,7 @@ function SelectFieldWeights({fields,weights,setWeights}){
                 {Object.keys(fields).map(fieldType => (
                 <ComboboxGroup key={fieldType} label={fieldType}>
                     {fields[fieldType].map(field => (
-                    <ComboboxOption key={fieldType+'_'+field} value={fieldType+'_'+field} displayName={field}/>
+                    <ComboboxOption key={fieldType+'_'+field.path} value={fieldType+'_'+field.path} displayName={field.path}/>
                     ))}
                 </ComboboxGroup>
                 ))}

@@ -176,9 +176,6 @@ const getIndexStatus = (name) => {
             <IndexBuilder saveIndex={saveIndex} suggestedFields={suggestedFields} mappings={mappings} setMappings={setMappings}
               selectedFields={selectedFields} setSelectedFields={setSelectedFields}/>
           </Tab>
-          <Tab name="Query Tuner">
-            <QueryTuner connection={connection} indexName={indexName}/>
-          </Tab>
         </Tabs>
         :<>{indexName && indexStatus.ready?
           <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
@@ -233,7 +230,7 @@ const getIndexStatus = (name) => {
             </div>
               </Tab>
             <Tab name="Query Tuner">
-              <QueryTuner connection={connection} indexName={indexName}/>
+              <QueryTuner connection={connection} indexName={indexName} fields={selectedFields}/>
             </Tab>
           </Tabs>
           :<></>
