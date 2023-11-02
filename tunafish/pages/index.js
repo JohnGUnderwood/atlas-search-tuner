@@ -10,12 +10,12 @@ import { ToastProvider, useToast } from '@leafygreen-ui/toast';
 import axios from 'axios';
 import { getCandidates } from '../functions/schema';
 import { parseSearchIndex } from '../functions/index-definition';
-import { reduceSuggestedFields } from '../functions/index-definition';
 import Code from '@leafygreen-ui/code';
-import { H3, Subtitle, Description } from '@leafygreen-ui/typography';
+import { Subtitle, Description } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import SearchResultFields from '../components/fields';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
+import Banner from '@leafygreen-ui/banner';
 
 const Home = () => {
   const { pushToast, popToast, clearStack } = useToast();
@@ -31,15 +31,17 @@ const Home = () => {
   const [selectedFields, setSelectedFields] = useState({facet:[],text:[],autocomplete:[]});
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState({facets:null,results:null});
+  const [createIndexErr, setCreateIndexErr] = useState(null)
   
   const resetIndexVariables = () =>{
     setIndexName(null);
     setMappings(null);
-    setSelectedFields(null);
+    setSelectedFields({facet:[],text:[],autocomplete:[]});
     setIndexStatus({waiting:false,ready:false,error:null});
     setResults(null);
     setFacets(null);
     setLoading({facets:null,results:null});
+    setCreateIndexErr(null);
   }
 
   useEffect(() => {
@@ -82,7 +84,6 @@ const Home = () => {
                     'text':candidates.text,
                     'autocomplete':candidates.autocomplete
                 });
-
               }).catch(error=>{
                 popToast(fetchingSchema);
                 pushToast({timeout:0,variant:"warning",title:"Schema failed",description:`Failed to get schema for ${connection.database}.${connection.collection}. ${error}`})
@@ -141,20 +142,17 @@ const saveIndex = () => {
   setIndexStatus({waiting:false,ready:false,error:null});
   postIndexMappings(mappings,indexName,connection)
       .then(resp=> {
-          setCreateError(false);
-          setCreateIndexResponse(resp.data);
           getIndexStatus(indexName);
       })
       .catch(err=> {
-          setCreateError(true);
-          setCreateIndexResponse(err);
+          setCreateIndexErr(err);
       })
 }
 
 const getIndexStatus = (name) => {
   setIndexStatus({...indexStatus,waiting:true})
   pollIndexStatus(connection,name).then(resp => {
-      setIndexStatus({...indexStatus,waiting:false})
+      setIndexStatus({...indexStatus,ready:true,waiting:false})
   }).catch(err => {setIndexStatus({...indexStatus,waiting:false,error:err})})
 }
 
@@ -169,7 +167,10 @@ const getIndexStatus = (name) => {
         <IndexSelector indexes={indexes} setBuilder={setBuilder} indexName={indexName} setIndexName={setIndexName}/>
         :<></>
       }
-      {(builder && indexName)?
+      {createIndexErr?<Banner variant="danger">{createIndexErr}</Banner>:<></>}
+      {indexStatus.waiting?<Banner variant="info"><Spinner description={`Building search index ${indexName}`}/></Banner>:<></>}
+      {indexStatus.error?<Banner variant="danger">{indexStatus.error}</Banner>:<></>}
+      {(builder && mappings)?
         <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
             <IndexBuilder saveIndex={saveIndex} suggestedFields={suggestedFields} mappings={mappings} setMappings={setMappings}

@@ -4,17 +4,11 @@ import Facets from "./facets";
 import Results from "./results";
 import Modal from '@leafygreen-ui/modal';
 import { Subtitle, Body, Link, Description } from '@leafygreen-ui/typography';
-import { getCandidates } from '../../functions/schema';
 import { Combobox, ComboboxOption } from '@leafygreen-ui/combobox';
 import Code from '@leafygreen-ui/code';
-import TextInput from '@leafygreen-ui/text-input';
 import Button from '@leafygreen-ui/button';
-import axios from 'axios';
-import Banner from '@leafygreen-ui/banner';
-import { Spinner } from '@leafygreen-ui/loading-indicator';
 import { buildSearchIndex } from '../../functions/index-definition'
 import Card from '@leafygreen-ui/card';
-import SearchResultFields from '../fields';
 
 
 function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, selectedFields, setSelectedFields}){
@@ -29,25 +23,19 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, select
     const handleFieldToggle = (type,paths) => {
         const selection = suggestedFields[type].filter((field)=>paths.includes(field.path));
         setSelectedFields({...selectedFields,[type]:selection});
-        setMappings(buildSearchIndex(mappings,newFields))
+        setMappings(buildSearchIndex(selectedFields))
     }
 
     useEffect(()=>{
         if(selectedFields){
             console.log("use effect fields",selectedFields);
-            setMappings(buildSearchIndex(mappings,selectedFields));
+            setMappings(buildSearchIndex(selectedFields));
         }
     },[selectedFields]);
 
     return (
         
         <>
-        {/* {error? <Banner variant="danger">{JSON.stringify(error)}</Banner>
-            :<>{indexStatus.waiting?
-                <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description={`Waiting for index '${indexName}' to build...`}></Spinner></div>
-                :<></>
-            }</>
-        } */}
         {suggestedFields?
             <>
             <SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/>
@@ -87,7 +75,7 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, select
                             <ComboboxOption key={field.path} value={field.path} displayName={field.path}/>
                         ))}
                     </Combobox>
-                    <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>{setOpen(false),setMappings(buildSearchIndex(mappings,selectedFields));}}>Done</Button>
+                    <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>setOpen(false)}>Done</Button>
                 </Modal>:<></>
             }
             </>

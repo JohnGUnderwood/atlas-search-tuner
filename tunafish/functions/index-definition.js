@@ -1,21 +1,3 @@
-function checkDocArrayByKey(array,key,value){
-    let found;
-    let foundAt;
-    for(const index in array){
-        if(array[index][key]==value){
-            found = true;
-            foundAt = index;
-            break
-        }
-    }
-
-    if(found){
-        return {found:true,at:foundAt};
-    }else{
-        return {found:false};
-    }
-}
-
 function parseField(fieldMappings,parent,newFields){
     for(const field in fieldMappings){
         //Need to handle case when a field has just one definition object
@@ -122,19 +104,7 @@ export function parseSearchIndex(mappings){
     return newFields;
 }
 
-export function reduceSuggestedFields(fields,suggestedFields){
-    // Remove parsed fields from suggested fields.
-    for(const type of ['facet','text','autocomplete']){
-        for(const field of fields[type]){
-            const check = checkDocArrayByKey(suggestedFields[type],'path',field.path)
-            if(check.found){
-               suggestedFields[type].splice(check.at,1);
-            }
-        }
-    }
-}
-
-export function buildSearchIndex(mappings,fields){
+export function buildSearchIndex(fields){
     // ######### Helpful Comment ########
     //fields should be an object with keys containing array of fields with their types:
     // {
@@ -147,7 +117,7 @@ export function buildSearchIndex(mappings,fields){
     //      ]
     // }
     // ######### Helpful Comment ########
-    // var mappings = {fields:{}};
+    var mappings = {fields:{}};
     if(fields.facet.length>0){
         fields.facet.forEach((field) => {
             let mapping;
