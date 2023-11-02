@@ -44,22 +44,6 @@ async function checkCollections(client,db,coll){
     }
   }
 
-  async function getIndexDef(client,coll,db,index){
-    const check = await checkCollections(client,db,coll);
-    if(check){
-      const searchIndexes = await client.db(db).collection(coll).listSearchIndexes(index).toArray()
-      if(searchIndexes.length > 0){
-        return searchIndexes[0]['latestDefinition']
-      }else{
-        console.log(`Search index '${index}' not found in ${db}.${coll}`)
-        throw new Error(`Search index '${index}' not found in '${db}.${coll}'`,{cause:"SearchIndexNotFound"})
-      }
-    }else{
-      console.log(`Collection '${coll}' not found in '${db}'`)
-      throw new Error(`Collection '${coll}' not found in '${db}'`,{cause:"CollectionNotFound"})
-    }
-  }
-
 async function getSchema(client,connection,sample){
   try {
       const documentStream = await client.db(connection.database).collection(connection.collection)
@@ -110,19 +94,6 @@ export default async function handler(req,res){
           }catch(error){
               res.status(400).send(`${error}`);
           }
-        }else if(type == "definition"){
-          if(req.body.index){
-            const searchIndex = req.body.index;
-            try{
-              const searchIndexDef = await getIndexDef(client,conn.collection,conn.database,searchIndex)
-              res.status(200).json(searchIndexDef).end();
-            }catch(error){
-              res.status(400).send(`${error}`);
-            }
-          }else{
-            console.log(`${req.body} missing required parameters (index)`)
-            res.status(400).send(`${req.body} missing required parameters (index)`)
-          }
         }else if(type == "create"){
           if(req.body.name && req.body.mappings && req.body.connection){
             try{
@@ -142,9 +113,9 @@ export default async function handler(req,res){
               res.status(400).send(`${req.body} missing required parameters (name,mappings,connection)`)
           }
         }else if(type == "status"){
-          if(req.body.connection && req.body.index){
+          if(req.body.connection && req.body.name){
             try{
-              const response = await client.db(conn.database).collection(conn.collection).listSearchIndexes(req.body.index).next()
+              const response = await client.db(conn.database).collection(conn.collection).listSearchIndexes(req.body.name).next()
               res.status(200).json(response).end();
             }catch(error){
               res.status(400).send(`${error}`);

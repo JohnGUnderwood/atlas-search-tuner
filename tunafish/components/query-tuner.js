@@ -10,12 +10,10 @@ import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import Code from '@leafygreen-ui/code';
-import { parseIndex } from '../functions/schema';
-import { Combobox, ComboboxOption } from '@leafygreen-ui/combobox';
 
-function QueryTuner({connection, indexes, setIndexes}){
-    const [fields, setFields] = useState(null);
-    const [searchIndex, setSearchIndex] = useState(null);
+function QueryTuner({connection, indexName, fields}){
+    // const [fields, setFields] = useState(null);
+    // const [searchIndex, setSearchIndex] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
@@ -26,160 +24,126 @@ function QueryTuner({connection, indexes, setIndexes}){
     const pageSize = 6;
 
     useEffect(()=>{
-        if(searchIndex){
+        if(indexName){
             setSearchResponse({});
             setWeights({});
             setQueryTerms(null);
-            setFields(null);
-            fetchIndex(connection,searchIndex).then(resp =>{
-                const types = parseIndex(resp.data);
-                var newFields = {};
-                ['string','autocomplete'].forEach((type)=>{
-                    if(types[type]){
-                    newFields[type]=types[type];
-                    }
-                });
-                if(Object.keys(newFields).length > 0 ){
-                setFields(newFields);
-                }
-                console.log(newFields);
-            });
-        }else if(!indexes){
-            setLoading(true);
-            fetchIndexes(connection).then(resp => {
-                setIndexes(resp.data);
-                setLoading(false);
-                setError(null);
-            }).catch(error => {setLoading(false);setError(error)});
+            // setFields(null);
         }
-    },[searchIndex,indexes]);
+    },[indexName]);
 
     const handleQueryChange = (event) => {
         setSearching(true);
         const query = event.target.value;
         setQueryTerms(query);
-        searchRequest(query, weights, searchIndex, connection, searchPage, pageSize)
+        searchRequest(query, weights, indexName, connection, searchPage, pageSize)
             .then(resp => {setSearchResponse(resp.data);setSearching(false)})
             .catch(console.error);
     };
     
     const handleSearchClick = () => {
         setSearching(true);
-        searchRequest(queryTerms, weights, searchIndex, connection, searchPage, pageSize)
+        searchRequest(queryTerms, weights, indexName, connection, searchPage, pageSize)
             .then(resp => {setSearchResponse(resp.data);setSearching(false);})
             .catch(console.error);
     };
 
 
     return (
-        <>{indexes?
-            <div>
+        <>
+            {fields?
                 <div style={{
-                        marginTop:"10px",
-                        display: "grid",
-                        gridTemplateColumns: "55% 5%",
-                        gap: "40px"
-                    }}
-                >
-                    <Combobox
-                        label="Choose a search index to query"
-                        placeholder="Select index"
-                        onChange={setSearchIndex}
-                    >
-                        {indexes.map(index => (
-                            <ComboboxOption key={index} value={index}></ComboboxOption>
-                        ))}
-                    </Combobox>
-                </div>
-                {fields?
-                    <div style={{marginTop:"10px"}}>
-                        <div style={{width:"30%",float:"left"}}>
+                    display: "grid",
+                    gridTemplateColumns: "20% 40% 40%",
+                    gap: "10px",
+                    marginTop:"10px"}}>
+                    <div>
                         <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
                         <br/>
                         <Button onClick={handleSearchClick}>Search</Button>
-                        {searchResponse?.query?
-                            <div>
-                            <br/>
-                            <H3>Query used</H3>
-                            {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
-                                searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
-                                : <></>
-                            }
-                            <p>
-                                <Code language={'javascript'}>
-                                    {JSON.stringify(searchResponse.query.searchStage,null,2)}
-                                </Code>
-                            </p>
-                            {/* <p>
-                                <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
-                            </p> */}
-                            </div>
-                            : <></>
+                        <br/>
+                        {searchResponse.facets?
+                            <Card>
+                                {Object.keys(searchResponse.facets).map(facet => (
+                                    <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
+                                        <Subtitle key={facet}>{facet}</Subtitle>
+                                            {searchResponse.facets[facet].buckets.map(bucket => (
+                                                <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{paddingRight:"5px"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                            ))}<br/>
+                                    </div>
+                                ))}
+                            </Card>
+                            :<></>
                         }
-                        </div>
-                        <div style={{width:"70%", float:"right", paddingTop:"15px"}}>
-                            <div style={{paddingLeft:"15px"}}>
-                                <SearchInput
-                                onChange={handleQueryChange}
-                                aria-label="some label"
-                                style={{marginBottom:"20px"}}
-                                ></SearchInput>
-                                {searching?
-                                <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Getting Search Results..."></Spinner></div>
-                                :
-                                <>
-                                    {searchResponse?.results?.map(result=>(
-                                    <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
-                                        <InlineCode><em>score:</em> {result.score}</InlineCode>
-                                        <br/>
-                                        <SearchResultFields doc={result}></SearchResultFields>
-                                    </Card>
-                                    ))}
-                                    {!searchResponse?.results ? <></> : searchResponse.results.length ? <></> : 
-                                    <SearchResult clickable="false">
-                                        <Subtitle>No Results</Subtitle>
-                                        <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>
-                                    </SearchResult>
-                                    }
-                                </>
+                    </div>
+                    <div>
+                        <div style={{paddingLeft:"15px"}}>
+                            <SearchInput
+                            onChange={handleQueryChange}
+                            aria-label="some label"
+                            style={{marginBottom:"20px"}}
+                            ></SearchInput>
+                            {searching?
+                            <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Getting Search Results..."></Spinner></div>
+                            :
+                            <>
+                                {searchResponse?.results?.map(result=>(
+                                <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
+                                    <InlineCode><em>score:</em> {result.score}</InlineCode>
+                                    <br/>
+                                    <SearchResultFields doc={result}></SearchResultFields>
+                                </Card>
+                                ))}
+                                {!searchResponse?.results ? <></> : searchResponse.results.length ? <></> : 
+                                <SearchResult clickable="false">
+                                    <Subtitle>No Results</Subtitle>
+                                    <Description weight="regular">Could not find any results for "<em>{queryTerms}</em>"</Description>
+                                </SearchResult>
                                 }
-                            </div>
+                            </>
+                            }
                         </div>
                     </div>
-                :<></>
-                }
-            </div>:<>{error?<Banner variant="danger">{JSON.stringify(error)}</Banner>:<>{loading?<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Fetching indexes..."></Spinner></div>:<></>}</>}</>
-        }
+                    {searchResponse?.query?
+                    <div>
+                        <H3>Query used</H3>
+                        {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
+                            searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
+                            : <></>
+                        }
+                        <p>
+                            <Code language={'javascript'}>
+                                {JSON.stringify(searchResponse.query.searchStage,null,2)}
+                            </Code>
+                        </p>
+                        <p>
+                            <Code language={'javascript'}>
+                                {JSON.stringify(searchResponse.query.searchMetaStage,null,2)}
+                            </Code>
+                        </p>
+                        {/* <p>
+                            <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
+                        </p> */}
+                    </div>
+                    : <></>
+                    }
+                </div>
+            :<></>
+            }
         </>
     )
 }
 
-function searchRequest(query, weights, searchIndex, conn, page, rpp) {
+function searchRequest(query, weights, indexName, conn, page, rpp) {
     return new Promise((resolve) => {
         axios.post(`api/post/atlas-search/query?terms=${query}&page=${page}&rpp=${rpp}`,
-            { weights : weights, connection: conn, index:searchIndex},
+            { weights : weights, connection: conn, index:indexName},
             { headers : 'Content-Type: application/json'}
         ).then(response => resolve(response))
         .catch((error) => {
             console.log(error)
             resolve(error.response.data);
         })
-    });
-}
-
-function fetchIndex(conn,searchIndex) {
-    return new Promise((resolve,reject) => {
-        axios.post(`api/post/atlas-search/index/definition?`,{connection:conn,index:searchIndex})
-        .then(response => resolve(response))
-        .catch((error) => reject(error.response.data))
-    });
-}
-
-function fetchIndexes(conn) {
-    return new Promise((resolve,reject) => {
-        axios.post(`api/post/atlas-search/index/list?`,{connection:conn})
-        .then(response => resolve(response))
-        .catch((error) => reject(error.response.data))
     });
 }
 

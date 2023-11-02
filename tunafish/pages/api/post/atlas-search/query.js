@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, BSON } from "mongodb";
 
 function isEmpty(obj) {
     for (const prop in obj) {
@@ -35,8 +35,8 @@ function buildQueryFromWeights(terms,weights){
       }
     }
     
-    let types = Object.keys(weights);
-    types.forEach((type) => {
+    let stringTypes = Object.keys(weights).filter(type => ['text','autocomplete'].includes(type));
+    stringTypes.forEach((type) => {
         let fields = Object.keys(weights[type]);
         fields.forEach((field) => {
             const weight = parseInt(weights[type][field]);
@@ -46,7 +46,7 @@ function buildQueryFromWeights(terms,weights){
             }else{
                 finalWeight = -1/weight
             }
-            if(type == 'string'){
+            if(type == 'text'){
                 searchStage['$search']['compound']['should'].push(
                     {
                         text:{
@@ -83,7 +83,52 @@ function buildQueryFromWeights(terms,weights){
         }
     }
 
-    return {searchStage:searchStage,msg:msg};
+
+    var searchMetaStage = {
+        $searchMeta:{
+            facet:{
+                operator:JSON.parse(JSON.stringify(searchStage['$search'])),
+                facets:{}
+            }
+        }
+    }
+    console.log(weights);
+    let facetTypes = Object.keys(weights).filter(type => !['text','autocomplete'].includes(type));
+    facetTypes.forEach((type) => {
+        let fields = Object.keys(weights[type]);
+        fields.forEach((field) => {
+            if(type == 'stringFacet'){
+                searchMetaStage['$searchMeta']['facet']['facets']['str'+field]= {
+                    type : "string",
+                    path : field,
+                    numBuckets : parseInt(weights[type][field]),
+                }
+            }else if(type == "numberFacet"){
+                const boundaries = weights[type][field].split(',').map(w => parseInt(w));
+                searchMetaStage['$searchMeta']['facet']['facets']['num'+field]= {
+                    type : "number",
+                    path : field,
+                    boundaries : boundaries,
+                    default: "other"
+                }
+            }else if(type == "dateFacet"){
+                const boundaries = weights[type][field].split(',').map(w => new Date(w));
+                searchMetaStage['$searchMeta']['facet']['facets']['num'+field]= {
+                    type : "date",
+                    path : field,
+                    boundaries : boundaries,
+                    default: "other"
+                }
+            }else{
+                msg.push(`${type} is ignored. Field path '${field}' not used for search.`)
+            }
+        });
+    });
+
+    console.log(searchMetaStage);
+
+
+    return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
 }
 
 function buildFacetQueryFromFields(fields){
@@ -92,7 +137,6 @@ function buildFacetQueryFromFields(fields){
             should:[ ]
         }
     }
-    
 
     let types = Object.keys(fields);
 
@@ -200,7 +244,9 @@ export default async function handler(req, res) {
 
                         const query = buildQueryFromWeights(terms,weights);
                         var searchStage = query.searchStage;
+                        var searchMetaStage = query.searchMetaStage;
                         searchStage['$search']['index'] = index;
+                        searchMetaStage['$searchMeta']['index']=index;
 
                         const projectStage = buildProjectionFromWeights(weights);
 
@@ -222,7 +268,8 @@ export default async function handler(req, res) {
             
                         try{
                             const response = await getResults(client,req.body.connection,pipeline)
-                            res.status(200).json({results:response,query:query});
+                            const facets = await getResults(client,req.body.connection,[searchMetaStage])
+                            res.status(200).json({results:response,facets:facets[0].facet,query:query});
                         }catch(error){
                             res.status(405).json({'error':error,query:query});
                         }
@@ -244,7 +291,7 @@ export default async function handler(req, res) {
                                 res.status(405).send(error);
                             }
                         }else if(req.body.type == "text"){
-                            const projectStage = {$project:{"_id":0}};
+                            const projectStage = {$project:{"_id":1}};
                             const textFields = fields.text.map(field => field.path);
                             const autocompleteFields = fields.autocomplete.map(field => field.path);
                             const fieldPaths = textFields.concat(autocompleteFields);
@@ -252,16 +299,7 @@ export default async function handler(req, res) {
                                 projectStage['$project'][field]=1;
                             });
                             const pipeline =[
-                               {
-                                    $search:{
-                                        wildcard:{
-                                            query:"*",
-                                            allowAnalyzedField:true,
-                                            path:fieldPaths.length>0?fieldPaths:{wildcard:"*"}
-                                        }
-                                    }
-                                },
-                                {$limit:5},
+                                {$limit:1},
                                 projectStage,
                             ];
                             console.log(JSON.stringify(pipeline))

@@ -1,7 +1,8 @@
-import { H3, Subtitle, Description } from "@leafygreen-ui/typography";
+import { Subtitle } from "@leafygreen-ui/typography";
 import Card from "@leafygreen-ui/card";
 import { palette } from '@leafygreen-ui/palette';
-import Tooltip from '@leafygreen-ui/tooltip';
+import Button from "@leafygreen-ui/button";
+import Icon from "@leafygreen-ui/icon";
 
 function Results({openModal,textFields}){
     const modalContent = {
@@ -19,9 +20,9 @@ function Results({openModal,textFields}){
 
     return (
         <>
-        <div onClick={() => openModal(modalContent)} style={{cursor: "pointer"}}>
-            <H3>Search Results</H3>
-            {[...Array(3)].map((e, i) => 
+        <Card>
+            <span style={{display:"grid",gridTemplateColumns:"40% 110px", alignItems:"end", marginBottom:"10px"}}><Subtitle>Search Results</Subtitle><Button size="xsmall" leftGlyph={<Icon glyph='Wrench'/>} variant="default" onClick={() => openModal(modalContent)} >CONFIGURE</Button></span>
+            {textFields?[...Array(2)].map((e, i) => (
                 <Card key={i} style={{marginBottom:"20px"}}>
                     <Subtitle key={`${i}title`} style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black,marginBottom:"15px"}}>&nbsp;</Subtitle>
                     <div key={`${i}desc`} weight="regular" as="div">
@@ -45,8 +46,11 @@ function Results({openModal,textFields}){
                         </>
                     )}
                 </Card>
-            )}
-        </div>
+                ))
+            :<></>
+            }
+            
+        </Card>
       </>
     )
 }
