@@ -188,50 +188,52 @@ const getIndexStatus = (name) => {
                 }}>
                   {loading.facets?
                     <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting facets...'></Spinner></div>
-                    :<Card>
-                      {facets?
-                        Object.keys(facets).map(facet => (
-                            <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
-                                <Subtitle key={facet}>{facet}</Subtitle>
-                                    {facets[facet].buckets.map(bucket => (
-                                        <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{paddingRight:"5px"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
-                                    ))}<br/>
-                            </div>
-                        ))
-                        :<></>
-                      }
-                    </Card>
-                  }
-                  {loading.results?
-                    <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting results...'></Spinner></div>
-                    :<Card>
-                      {selectedFields.autocomplete?<><Subtitle>Autocomplete Fields</Subtitle>
-                      <Description>{JSON.stringify(selectedFields.autocomplete.map(field => field.path))}</Description></>:<></>}
-                      {selectedFields.text?<><Subtitle>Search Fields</Subtitle>
-                      <Description>{JSON.stringify(selectedFields.text.map(field => field.path))}</Description></>:<></>}
-                      <Subtitle>Example result</Subtitle>
-                      {results?.map(result =>(
-                        <Card key={result._id} style={{marginBottom:"20px"}}>
-                            <SearchResultFields key={`${result._id}_fields`} doc={result}></SearchResultFields>
-                        </Card>
-                      ))}
-                    </Card>
-                  }
-                  {mappings?
-                    <Card>
-                        <div style={{height:"100%"}}>
-                            <Code language={'javascript'} style={{height:"80%"}}>
-                                {JSON.stringify({mappings:mappings},null,2)}
-                            </Code>
-                        </div>
-                    </Card>
-                    :<></>
-                  }
-            </div>
-              </Tab>
-            <Tab name="Query Tuner">
-              <QueryTuner connection={connection} indexName={indexName} fields={selectedFields}/>
+                      :<Card>
+                        {facets?
+                          Object.keys(facets).map(facet => (
+                              <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
+                                  <Subtitle key={facet}>{facet}</Subtitle>
+                                      {facets[facet].buckets.map(bucket => (
+                                          <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{paddingRight:"5px"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                      ))}<br/>
+                              </div>
+                          ))
+                          :<></>
+                        }
+                      </Card>
+                    }
+                    {loading.results?
+                      <div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting results...'></Spinner></div>
+                      :<Card>
+                        {selectedFields.autocomplete?<><Subtitle>Autocomplete Fields</Subtitle>
+                        <Description>{JSON.stringify(selectedFields.autocomplete.map(field => field.path))}</Description></>:<></>}
+                        {selectedFields.text?<><Subtitle>Search Fields</Subtitle>
+                        <Description>{JSON.stringify(selectedFields.text.map(field => field.path))}</Description></>:<></>}
+                        <Subtitle>Example result</Subtitle>
+                        {results?.map(result =>(
+                          <Card key={result._id} style={{marginBottom:"20px"}}>
+                              <SearchResultFields key={`${result._id}_fields`} doc={result}></SearchResultFields>
+                          </Card>
+                        ))}
+                      </Card>
+                    }
+                    {mappings?
+                      <Card>
+                          <div style={{height:"100%"}}>
+                              <Code language={'javascript'} style={{height:"80%"}}>
+                                  {JSON.stringify({mappings:mappings},null,2)}
+                              </Code>
+                          </div>
+                      </Card>
+                      :<></>
+                    }
+              </div>
             </Tab>
+            {selectedFields?
+              <Tab name="Query Tuner">
+                <QueryTuner connection={connection} indexName={indexName} fields={selectedFields}/>
+              </Tab>
+            :<></>}
           </Tabs>
           :<></>
         }</>

@@ -10,7 +10,6 @@ import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import Code from '@leafygreen-ui/code';
-import { parseIndex } from '../functions/schema';
 
 function QueryTuner({connection, indexName, fields}){
     // const [fields, setFields] = useState(null);
@@ -51,34 +50,33 @@ function QueryTuner({connection, indexName, fields}){
 
 
     return (
-        <div>
+        <>
             {fields?
-                <div style={{marginTop:"10px"}}>
-                    <div style={{width:"30%",float:"left"}}>
-                    <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
-                    <br/>
-                    <Button onClick={handleSearchClick}>Search</Button>
-                    {searchResponse?.query?
-                        <div>
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "20% 40% 40%",
+                    gap: "10px",
+                    marginTop:"10px"}}>
+                    <div>
+                        <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
                         <br/>
-                        <H3>Query used</H3>
-                        {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
-                            searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
-                            : <></>
+                        <Button onClick={handleSearchClick}>Search</Button>
+                        <br/>
+                        {searchResponse.facets?
+                            <Card>
+                                {Object.keys(searchResponse.facets).map(facet => (
+                                    <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
+                                        <Subtitle key={facet}>{facet}</Subtitle>
+                                            {searchResponse.facets[facet].buckets.map(bucket => (
+                                                <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{paddingRight:"5px"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                            ))}<br/>
+                                    </div>
+                                ))}
+                            </Card>
+                            :<></>
                         }
-                        <p>
-                            <Code language={'javascript'}>
-                                {JSON.stringify(searchResponse.query.searchStage,null,2)}
-                            </Code>
-                        </p>
-                        {/* <p>
-                            <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
-                        </p> */}
-                        </div>
-                        : <></>
-                    }
                     </div>
-                    <div style={{width:"70%", float:"right", paddingTop:"15px"}}>
+                    <div>
                         <div style={{paddingLeft:"15px"}}>
                             <SearchInput
                             onChange={handleQueryChange}
@@ -106,10 +104,33 @@ function QueryTuner({connection, indexName, fields}){
                             }
                         </div>
                     </div>
+                    {searchResponse?.query?
+                    <div>
+                        <H3>Query used</H3>
+                        {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
+                            searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
+                            : <></>
+                        }
+                        <p>
+                            <Code language={'javascript'}>
+                                {JSON.stringify(searchResponse.query.searchStage,null,2)}
+                            </Code>
+                        </p>
+                        <p>
+                            <Code language={'javascript'}>
+                                {JSON.stringify(searchResponse.query.searchMetaStage,null,2)}
+                            </Code>
+                        </p>
+                        {/* <p>
+                            <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
+                        </p> */}
+                    </div>
+                    : <></>
+                    }
                 </div>
             :<></>
             }
-        </div>
+        </>
     )
 }
 
