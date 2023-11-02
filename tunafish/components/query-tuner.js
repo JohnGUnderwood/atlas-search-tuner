@@ -19,6 +19,7 @@ function QueryTuner({connection, indexName, fields}){
     const [searching, setSearching] = useState(false);
     const [queryTerms, setQueryTerms] = useState(null);
     const [weights, setWeights] = useState({});
+    const [filter, setFilter] = useState(null);
     const [searchResponse, setSearchResponse] = useState({});
     const [searchPage, setSearchPage] = useState(1);
     const pageSize = 6;
@@ -36,14 +37,22 @@ function QueryTuner({connection, indexName, fields}){
         setSearching(true);
         const query = event.target.value;
         setQueryTerms(query);
-        searchRequest(query, weights, indexName, connection, searchPage, pageSize)
+        searchRequest(query, weights, null, indexName, connection, searchPage, pageSize)
             .then(resp => {setSearchResponse(resp.data);setSearching(false)})
             .catch(console.error);
     };
     
+    const filterSearch = (filter) => {
+        console.log(filter);
+        setSearching(true);
+        searchRequest(queryTerms, weights, filter, indexName, connection, searchPage, pageSize)
+            .then(resp => {setSearchResponse(resp.data);setSearching(false);})
+            .catch(console.error);
+    }
+
     const handleSearchClick = () => {
         setSearching(true);
-        searchRequest(queryTerms, weights, indexName, connection, searchPage, pageSize)
+        searchRequest(queryTerms, weights, null, indexName, connection, searchPage, pageSize)
             .then(resp => {setSearchResponse(resp.data);setSearching(false);})
             .catch(console.error);
     };
@@ -67,9 +76,9 @@ function QueryTuner({connection, indexName, fields}){
                                 {Object.keys(searchResponse.facets).map(facet => (
                                     <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
                                         <Subtitle key={facet}>{facet}</Subtitle>
-                                            {searchResponse.facets[facet].buckets.map(bucket => (
-                                                <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{paddingRight:"5px"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
-                                            ))}<br/>
+                                        {searchResponse.facets[facet].buckets.map(bucket => (
+                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {filterSearch({value:bucket._id,name:facet})}} key={`${bucket._id}_label`}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                        ))}<br/>
                                     </div>
                                 ))}
                             </Card>
@@ -134,11 +143,11 @@ function QueryTuner({connection, indexName, fields}){
     )
 }
 
-function searchRequest(query, weights, indexName, conn, page, rpp) {
+function searchRequest(query, weights, filter, indexName, conn, page, rpp) {
     return new Promise((resolve) => {
         axios.post(`api/post/atlas-search/query?terms=${query}&page=${page}&rpp=${rpp}`,
-            { weights : weights, connection: conn, index:indexName},
-            { headers : 'Content-Type: application/json'}
+            { weights : weights, connection: conn, index:indexName, filter:filter},
+            { headers : 'Content-Type: application/json'},
         ).then(response => resolve(response))
         .catch((error) => {
             console.log(error)
