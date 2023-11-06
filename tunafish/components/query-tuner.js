@@ -71,7 +71,7 @@ function QueryTuner({connection, indexName, fields}){
                         <br/>
                         <Button onClick={handleSearchClick}>Search</Button>
                         <br/>
-                        {searchResponse.facets?
+                        {searchResponse?.facets?
                             <Card>
                                 {Object.keys(searchResponse.facets).map(facet => (
                                     <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
@@ -145,14 +145,18 @@ function QueryTuner({connection, indexName, fields}){
 
 function searchRequest(query, weights, filter, indexName, conn, page, rpp) {
     return new Promise((resolve) => {
-        axios.post(`api/post/atlas-search/query?terms=${query}&page=${page}&rpp=${rpp}`,
-            { weights : weights, connection: conn, index:indexName, filter:filter},
-            { headers : 'Content-Type: application/json'},
-        ).then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
+        if(query.length > 0){
+            axios.post(`api/post/atlas-search/query?terms=${query}&page=${page}&rpp=${rpp}`,
+                { weights : weights, connection: conn, index:indexName, filter:filter},
+                { headers : 'Content-Type: application/json'},
+            ).then(response => resolve(response))
+            .catch((error) => {
+                console.log(error)
+                resolve(error.response.data);
+            })
+        }else{
+            resolve({});
+        }
     });
 }
 

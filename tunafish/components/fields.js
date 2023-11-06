@@ -17,18 +17,27 @@ function SearchResultFields({doc,parent}){
                     <Label key={`${parent}${index}`}>
                         {child}
                         {doc[child].reduce((display, item, index)=>{
-                        if(index < 4){
-                            display.push(<Body key={item}>{item}</Body>)
-                        }else if(index == 5){
-                            display.push(<Body key={item}>{item} ... ({doc[child].length-5} more)</Body>)
-                        } 
-                        return display
+                            if(typeof item === 'object'){
+                                if(index < 4){
+                                    display.push(<Body key={`${parent}${child}${index}`}>{JSON.stringify(item)}</Body>)
+                                }else if(index == 5){
+                                    display.push(<Body key={`${parent}${child}${index}`}>{JSON.stringify(item)} ... ({doc[child].length-5} more)</Body>)
+                                } 
+                                return display
+                            }else{
+                                if(index < 4){
+                                    display.push(<Body key={item}>{item}</Body>)
+                                }else if(index == 5){
+                                    display.push(<Body key={item}>{item} ... ({doc[child].length-5} more)</Body>)
+                                } 
+                                return display
+                            }
                         },[])}
                     </Label>
-                    :
-                    <SearchResultFields key={`${parent}${child}${index}`} doc={doc[child]} parent={parent? parent+"."+child : child}></SearchResultFields>
                 :
-                <Label key={`${parent}${index}`}>{parent? parent+"."+child : child}<Body>{doc[child]}</Body></Label>
+                <SearchResultFields key={`${parent}${child}${index}`} doc={doc[child]} parent={parent? parent+"."+child : child}></SearchResultFields>
+            :
+            <Label key={`${parent}${index}`}>{parent? parent+"."+child : child}<Body>{doc[child]}</Body></Label>
             }
             </>
         ))
