@@ -10,6 +10,8 @@ import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import Code from '@leafygreen-ui/code';
+import { Chip } from '@leafygreen-ui/chip';
+
 
 function QueryTuner({connection, indexName, fields}){
     // const [fields, setFields] = useState(null);
@@ -19,7 +21,7 @@ function QueryTuner({connection, indexName, fields}){
     const [searching, setSearching] = useState(false);
     const [queryTerms, setQueryTerms] = useState(null);
     const [weights, setWeights] = useState({});
-    const [filter, setFilter] = useState(null);
+    const [filters, setFilters] = useState([]);
     const [searchResponse, setSearchResponse] = useState({});
     const [searchPage, setSearchPage] = useState(1);
     const pageSize = 6;
@@ -33,25 +35,33 @@ function QueryTuner({connection, indexName, fields}){
         }
     },[indexName]);
 
+    useEffect(()=>{
+        setSearching(true);
+        searchRequest(queryTerms, weights, filters, indexName, connection, searchPage, pageSize)
+            .then(resp => {setSearchResponse(resp.data);setSearching(false);})
+            .catch(error => {console.error;setSearching(false);});
+    },[filters]);
+
     const handleQueryChange = (event) => {
         setSearching(true);
+        setFilters([]);
         const query = event.target.value;
         setQueryTerms(query);
         searchRequest(query, weights, null, indexName, connection, searchPage, pageSize)
             .then(resp => {setSearchResponse(resp.data);setSearching(false)})
-            .catch(console.error);
+            .catch(error => {console.error;setSearching(false);});
     };
     
-    const filterSearch = (filter) => {
-        console.log(filter);
-        setSearching(true);
-        searchRequest(queryTerms, weights, filter, indexName, connection, searchPage, pageSize)
-            .then(resp => {setSearchResponse(resp.data);setSearching(false);})
-            .catch(console.error);
+    const removeFilter = (index) => {
+        console.log(filters)
+        console.log(`remove ${index}`)
+        const newFilters = filters.toSpliced(index,1);
+        setFilters(newFilters);
     }
 
     const handleSearchClick = () => {
         setSearching(true);
+        setFilters([]);
         searchRequest(queryTerms, weights, null, indexName, connection, searchPage, pageSize)
             .then(resp => {setSearchResponse(resp.data);setSearching(false);})
             .catch(console.error);
@@ -69,15 +79,25 @@ function QueryTuner({connection, indexName, fields}){
                     <div>
                         <SelectFieldWeights fields={fields} weights={weights} setWeights={setWeights}></SelectFieldWeights>
                         <br/>
-                        <Button onClick={handleSearchClick}>Search</Button>
+                        <Button style={{marginBottom:"10px"}} onClick={handleSearchClick}>Search</Button>
                         <br/>
+                        {filters.length > 0?
+                            filters.map((filter,index) => (
+                                <Chip label={filter.value}
+                                    onDismiss={() => {removeFilter(index)}}
+                                    key={filter.value}
+                                    baseFontSize={16}
+                                />
+                            ))
+                            :<></>
+                        }
                         {searchResponse?.facets?
                             <Card>
                                 {Object.keys(searchResponse.facets).map(facet => (
                                     <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
                                         <Subtitle key={facet}>{facet}</Subtitle>
                                         {searchResponse.facets[facet].buckets.map(bucket => (
-                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {filterSearch({value:bucket._id,name:facet})}} key={`${bucket._id}_label`}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {setFilters([...filters,{value:bucket._id,name:facet}])}} key={`${bucket._id}_label`}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
                                         ))}<br/>
                                     </div>
                                 ))}
@@ -120,16 +140,22 @@ function QueryTuner({connection, indexName, fields}){
                             searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))
                             : <></>
                         }
-                        <p>
-                            <Code language={'javascript'}>
-                                {JSON.stringify(searchResponse.query.searchStage,null,2)}
-                            </Code>
-                        </p>
-                        <p>
-                            <Code language={'javascript'}>
-                                {JSON.stringify(searchResponse.query.searchMetaStage,null,2)}
-                            </Code>
-                        </p>
+                        {searchResponse.query.searchStage?
+                            <p>
+                                <Code language={'javascript'}>
+                                    {JSON.stringify(searchResponse.query.searchStage,null,2)}
+                                </Code>
+                            </p>
+                            :<></>
+                        }
+                        {searchResponse.query.searchMetaStage?
+                            <p>
+                                <Code language={'javascript'}>
+                                    {JSON.stringify(searchResponse.query.searchMetaStage,null,2)}
+                                </Code>
+                            </p>
+                            :<></>
+                        }
                         {/* <p>
                             <SaveQuery query={searchResponse.query.searchStage} queryTerms={queryTerms}></SaveQuery>
                         </p> */}
@@ -143,11 +169,11 @@ function QueryTuner({connection, indexName, fields}){
     )
 }
 
-function searchRequest(query, weights, filter, indexName, conn, page, rpp) {
+function searchRequest(query, weights, filters, indexName, conn, page, rpp) {
     return new Promise((resolve) => {
         if(query.length > 0){
             axios.post(`api/post/atlas-search/query?terms=${query}&page=${page}&rpp=${rpp}`,
-                { weights : weights, connection: conn, index:indexName, filter:filter},
+                { weights : weights, connection: conn, index:indexName, filters:filters},
                 { headers : 'Content-Type: application/json'},
             ).then(response => resolve(response))
             .catch((error) => {

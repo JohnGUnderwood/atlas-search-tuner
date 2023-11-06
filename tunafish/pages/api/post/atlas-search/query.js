@@ -10,7 +10,7 @@ function isEmpty(obj) {
     return true;
   }
 
-function buildQueryFromWeights(terms,weights,filter){
+function buildQueryFromWeights(terms,weights,filters){
     var msg = [];
     if(weights === undefined || isEmpty(weights)){
         msg.push('No field weights defined. Searched using wildcard')
@@ -35,40 +35,41 @@ function buildQueryFromWeights(terms,weights,filter){
       }
     }
 
-    if(filter){
-        console.log(filter);
-        const type = filter.name.split('_')[0];
-          // Fieldname might have '_' in it
-        const path = filter.name.split('_').slice(1).join('_');
-        console.log(type,path,filter.value);
-        if(type == 'date'){
-            searchStage['$search']['compound']['filter'] = [
-                {
-                    equals:{
-                        value:new Date(filter.value),
-                        path:path
+    if(filters){
+        searchStage['$search']['compound']['filter'] = []
+        filters.forEach(filter => {
+            const type = filter.name.split('_')[0];
+            // Fieldname might have '_' in it
+            const path = filter.name.split('_').slice(1).join('_');
+            if(type == 'date'){
+                searchStage['$search']['compound']['filter'].push(
+                    {
+                        equals:{
+                            value:new Date(filter.value),
+                            path:path
+                        }
                     }
-                }
-            ]
-        }else if(type == 'number'){
-            searchStage['$search']['compound']['filter'] = [
-                {
-                    equals:{
-                        value:parseFloat(filter.value),
-                        path:path
+                )
+            }else if(type == 'number'){
+                searchStage['$search']['compound']['filter'].push(
+                    {
+                        equals:{
+                            value:parseFloat(filter.value),
+                            path:path
+                        }
                     }
-                }
-            ]
-        }else if(type == 'string'){
-            searchStage['$search']['compound']['filter'] = [
-                {
-                    text:{
-                        query:filter.value,
-                        path:path
+                )
+            }else if(type == 'string'){
+                searchStage['$search']['compound']['filter'].push(
+                    {
+                        text:{
+                            query:filter.value,
+                            path:path
+                        }
                     }
-                }
-            ]
-        }
+                )
+            }
+        });
         
     }
     
@@ -158,7 +159,7 @@ function buildQueryFromWeights(terms,weights,filter){
         });
     });
 
-    if(searchMetaStage['$searchMeta']['facet']['facets'].length>0){
+    if(Object.keys(searchMetaStage['$searchMeta']['facet']['facets']).length>0){
         return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
     }else{
         return {searchStage:searchStage,msg:msg};
@@ -272,12 +273,12 @@ export default async function handler(req, res) {
                     if(req.body.weights){
                         const terms = req.query.terms? req.query.terms : "" ;
                         const weights = req.body.weights;
-                        const filter = req.body.filter? req.body.filter : null;
+                        const filters = req.body.filters? req.body.filters : null;
                         
                         const limit = req.query.rpp? parseInt(req.query.rpp) : 6;
                         const skip = req.query.page? parseInt(req.query.page-1)*limit : 0;
 
-                        const query = buildQueryFromWeights(terms,weights,filter);
+                        const query = buildQueryFromWeights(terms,weights,filters);
                         var searchStage = query.searchStage;
                         searchStage['$search']['index'] = index;
 
