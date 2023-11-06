@@ -19,7 +19,7 @@ function SelectFieldWeights({fields,weights,setWeights}){
       var newWeights = {};
       const defaultWeights = {
         autocomplete:0,
-        string:0,
+        text:0,
         stringFacet:10,
         dateFacet:'1900,2000,2100',
         numberFacet:'0,10,100,1000'
