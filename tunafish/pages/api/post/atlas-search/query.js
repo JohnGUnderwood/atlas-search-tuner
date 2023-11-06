@@ -126,7 +126,7 @@ function buildQueryFromWeights(terms,weights,filter){
         }
     }
 
-    let facetTypes = Object.keys(weights).filter(type => !['text','autocomplete'].includes(type));
+    let facetTypes = Object.keys(weights).filter(type => ['stringFacet','numberFacet','dataFacet'].includes(type));
     facetTypes.forEach((type) => {
         let fields = Object.keys(weights[type]);
         fields.forEach((field) => {
@@ -158,7 +158,11 @@ function buildQueryFromWeights(terms,weights,filter){
         });
     });
 
-    return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
+    if(searchMetaStage['$searchMeta']['facet']['facets'].length>0){
+        return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
+    }else{
+        return {searchStage:searchStage,msg:msg};
+    }
 }
 
 function buildFacetQueryFromFields(fields){
@@ -275,9 +279,7 @@ export default async function handler(req, res) {
 
                         const query = buildQueryFromWeights(terms,weights,filter);
                         var searchStage = query.searchStage;
-                        var searchMetaStage = query.searchMetaStage;
                         searchStage['$search']['index'] = index;
-                        searchMetaStage['$searchMeta']['index']=index;
 
                         const projectStage = buildProjectionFromWeights(weights);
 
@@ -299,8 +301,14 @@ export default async function handler(req, res) {
             
                         try{
                             const response = await getResults(client,req.body.connection,pipeline)
-                            const facets = await getResults(client,req.body.connection,[searchMetaStage])
-                            res.status(200).json({results:response,facets:facets[0].facet,query:query});
+                            if('searchMetaStage' in query){
+                                var searchMetaStage = query.searchMetaStage;
+                                searchMetaStage['$searchMeta']['index']=index;
+                                const facets = await getResults(client,req.body.connection,[searchMetaStage])
+                                res.status(200).json({results:response,facets:facets[0].facet,query:query});
+                            }else{
+                                res.status(200).json({results:response,query:query});
+                            }
                         }catch(error){
                             res.status(405).json({'error':error,query:query});
                         }
