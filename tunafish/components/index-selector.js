@@ -4,6 +4,7 @@ import TextInput from '@leafygreen-ui/text-input';
 import { useEffect, useState } from 'react';
 import Icon from '@leafygreen-ui/icon';
 import { H3 } from '@leafygreen-ui/typography';
+import { Chip } from '@leafygreen-ui/chip';
 
 function IndexSelector({indexes,userSelection,setUserSelection}){
     const [createNew, setCreateNew] = useState(false);
@@ -67,7 +68,8 @@ function IndexSelector({indexes,userSelection,setUserSelection}){
                     alignItems: "center"
                 }}
                 >
-                <H3>{`Search index: ${userSelection.indexName}`}</H3>
+                {/* <H3>{`Search index: ${userSelection.indexName}`}</H3> */}
+                {indexes.includes(userSelection.indexName)?<Chip label={`DEPLOYED: ${userSelection.indexName}`} variant="green" baseFontSize={16}/>:<Chip label={`CONFIGURING: ${userSelection.indexName}`} variant="yellow" baseFontSize={16}/>}
                 <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>{setUserSelection({...userSelection,indexName:null});}}>Change index</Button>
                 </div>
                 :<></>

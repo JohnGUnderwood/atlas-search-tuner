@@ -245,7 +245,7 @@ const getIndexStatus = (name) => {
             />
           </Tab>
           <Tab name="Query Tuner">
-            <Callout variant="important" title="Build index">You need to build or select an index in order to configure queries against it.</Callout>
+            <Callout variant="important" title="Build index">You need to build or select an already deployed index in order to configure queries against it.</Callout>
           </Tab>
         </Tabs>
         :<>{indexState.status == 'ready'?
