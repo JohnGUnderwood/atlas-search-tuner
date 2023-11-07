@@ -18,8 +18,8 @@ import { Spinner } from '@leafygreen-ui/loading-indicator';
 import Banner from '@leafygreen-ui/banner';
 
 const Home = () => {
-  const { pushToast, popToast, clearStack } = useToast();
-  const [connection, setConnection] = useState({connected:false}); // uri, database, collection, connected
+  const { pushToast, popToast } = useToast();
+  // const [connection, setConnection] = useState({connected:false}); // uri, database, collection, connected
   const [indexes, setIndexes] = useState(null);
   const [suggestedFields, setSuggestedFields] = useState(null);
   const [indexName, setIndexName] = useState(null);
@@ -32,25 +32,36 @@ const Home = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState({facets:null,results:null});
   const [createIndexErr, setCreateIndexErr] = useState(null)
+
+  const [connection, setConnection] = useState({connected:false,uri:null,database:null,collection:null});
+  const [userSelectionState, setUserSelection] = useState({fields:null,weights:null,indexName:null});
+  const [collectionState, setCollection] = useState({indexes:null,schema:null});
+  const [indexState, setIndex] = useState({status:null,name:null,fields:null,definition:null,error:null});
+  const [indexBuilderState, setIndexBuilder] = useState({
+    name:null,
+    status:null, //'active'=User is making selections|'building'=Atlas is building the index|'ready'=Index is ready|'error'=An error occured
+    definition:null,
+    suggestedFields:null,
+    selectFields:null,
+    error:null
+  });
+  const [searchResponseState, setSearchResponse] = useState({status:null,results:null,facets:null,error:null});
+
   
-  const resetIndexVariables = () =>{
-    setIndexName(null);
-    setMappings(null);
-    setSelectedFields({facet:[],text:[],autocomplete:[]});
-    setIndexStatus({waiting:false,ready:false,error:null});
-    setResults(null);
-    setFacets(null);
-    setLoading({facets:null,results:null});
-    setCreateIndexErr(null);
+  const resetAppState = () =>{
+    setUserSelection({fields:null,weights:null,indexName:null});
+    setCollection({indexes:null,schema:null});
+    setIndex({status:null,name:null,fields:null,definition:null,error:null});
+    setIndexBuilder({name:null,status:null,definition:null,suggestedFields:null,selectFields:null,error:null});
+    setSearchResponse({status:null,results:null,facets:null,error:null});
   }
 
   useEffect(() => {
     if(connection.connected){
-      resetIndexVariables();
-      setIndexes(null);
+      resetAppState();
       const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
       fetchIndexes(connection).then(resp=>{
-          setIndexes(resp.data);
+          setCollection({...collectionState,indexes:resp.data})
           popToast(fetchingIndexes);
           pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
       })
@@ -64,7 +75,7 @@ const Home = () => {
 
   useEffect(()=>{
     if(!indexName){
-      resetIndexVariables();
+      resetAppState();
     }else if(indexName){
       fetchIndex(connection,indexName).then(resp => {
           if(resp.data){
@@ -164,7 +175,12 @@ const getIndexStatus = (name) => {
       </AppBanner>
       <hr/>
       {connection.connected?
-        <IndexSelector indexes={indexes} setBuilder={setBuilder} indexName={indexName} setIndexName={setIndexName}/>
+        <IndexSelector indexes={collectionState.indexes}
+          userSelection={userSelectionState}
+          setUserSelection={setUserSelection}
+          indexBuilder={indexBuilderState}
+          setIndexBuilder={setIndexBuilder}
+          />
         :<></>
       }
       {createIndexErr?<Banner variant="danger">{createIndexErr}</Banner>:<></>}
