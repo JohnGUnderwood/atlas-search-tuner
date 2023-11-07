@@ -1,11 +1,11 @@
 import { Combobox, ComboboxOption, ComboboxGroup } from '@leafygreen-ui/combobox';
 import Button from '@leafygreen-ui/button';
 import TextInput from '@leafygreen-ui/text-input';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Icon from '@leafygreen-ui/icon';
 import { H3 } from '@leafygreen-ui/typography';
 
-function IndexSelector({indexes,userSelection,setUserSelection,indexBuilder,setIndexBuilder}){
+function IndexSelector({indexes,userSelection,setUserSelection}){
     const [createNew, setCreateNew] = useState(false);
     const [name, setName] = useState(userSelection.indexName);
 
@@ -16,6 +16,8 @@ function IndexSelector({indexes,userSelection,setUserSelection,indexBuilder,setI
     const handleIndexChange = (name) => {
         setUserSelection({...userSelection,indexName:name});
     }
+
+    useEffect(()=>{},[userSelection.indexName]);
 
     return (
         <>
@@ -39,7 +41,7 @@ function IndexSelector({indexes,userSelection,setUserSelection,indexBuilder,setI
                     <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
                         <ComboboxGroup label="EXISTING INDEXES">
                         {indexes.map(index => (
-                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false);setIndexBuilder({...indexBuilder,status:"ready"})}}></ComboboxOption>
+                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false)}}></ComboboxOption>
                         ))}
                         </ComboboxGroup>
                 </Combobox>:
@@ -53,7 +55,7 @@ function IndexSelector({indexes,userSelection,setUserSelection,indexBuilder,setI
                 </Combobox>}
                 {createNew?
                 <><TextInput label="Index name" description='Unique name for a search index' placeholder='newSearchIndex' value={name} onChange={(e)=>{handleNameInput(e.target.value)}}></TextInput>
-                <Button variant="primary" onClick={()=>{setUserSelection({...userSelection,indexName:name});setName(null);setCreateNew(false);setIndexBuilder({...indexBuilder,status:"active"})}}>Configure</Button></>
+                <Button variant="primary" onClick={()=>{setUserSelection({...userSelection,indexName:name});setName(null);setCreateNew(false);}}>Configure</Button></>
                 :<div></div>}
             </div>
         :<>{userSelection.indexName?
@@ -66,7 +68,7 @@ function IndexSelector({indexes,userSelection,setUserSelection,indexBuilder,setI
                 }}
                 >
                 <H3>{`Search index: ${userSelection.indexName}`}</H3>
-                <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>{setUserSelection({...userSelection,indexName:null});setIndexBuilder({...indexBuilder,status:null})}}>Change index</Button>
+                <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>{setUserSelection({...userSelection,indexName:null});}}>Change index</Button>
                 </div>
                 :<></>
             }</>

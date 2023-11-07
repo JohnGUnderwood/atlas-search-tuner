@@ -306,7 +306,11 @@ export default async function handler(req, res) {
                                 var searchMetaStage = query.searchMetaStage;
                                 searchMetaStage['$searchMeta']['index']=index;
                                 const facets = await getResults(client,req.body.connection,[searchMetaStage])
-                                res.status(200).json({results:response,facets:facets[0].facet,query:query});
+                                if(facets.length>0){
+                                    res.status(200).json({results:response,facets:facets[0].facet,query:query});
+                                }else{
+                                    res.status(200).json({results:response,facets:[],query:query});
+                                }
                             }else{
                                 res.status(200).json({results:response,query:query});
                             }
@@ -316,21 +320,11 @@ export default async function handler(req, res) {
 
                     }else if(req.body.fields){
                         const fields = req.body.fields;
-                        if(req.body.type == "facet"){
-                            const searchStage = buildFacetQueryFromFields(fields);
-                            searchStage['$searchMeta']['index'] = index;
-                            const pipeline = [
-                                searchStage
-                                ]
-                            console.log(JSON.stringify(pipeline))
-                            try{
-                                const response = await getResults(client,req.body.connection,pipeline)
-                                res.status(200).json(response[0]);
-                            }catch(error){
-                                console.log(JSON.stringify(pipeline))
-                                res.status(405).send(error);
-                            }
-                        }else if(req.body.type == "text"){
+                       
+                        const searchStage = buildFacetQueryFromFields(fields);
+                        searchStage['$searchMeta']['index'] = index;
+                        try{
+                            const facets = await getResults(client,req.body.connection,[searchStage])
                             const projectStage = {$project:{"_id":1}};
                             const textFields = fields.text.map(field => field.path);
                             const autocompleteFields = fields.autocomplete.map(field => field.path);
@@ -342,18 +336,11 @@ export default async function handler(req, res) {
                                 {$limit:1},
                                 projectStage,
                             ];
-                            console.log(JSON.stringify(pipeline))
-                            try{
-                                const response = await getResults(client,req.body.connection,pipeline)
-                                res.status(200).json(response);
-                            }catch(error){
-                                console.log(JSON.stringify(pipeline))
-                                res.status(405).send(error);
-                            }
-                        }else{
-                            res.status(400).send(`Request body 'type' parameter missing, undefined, or not allowed`);
+                            const results = await getResults(client,req.body.connection,pipeline)
+                            res.status(200).json({facets:facets[0].facet,results:results});
+                        }catch(error){
+                            res.status(405).send(error);
                         }
-
                     }else{
                         res.status(400).send(`Request body missing fields or weights`);
                     }

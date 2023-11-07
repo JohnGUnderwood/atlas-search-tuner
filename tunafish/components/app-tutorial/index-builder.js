@@ -11,9 +11,11 @@ import { buildSearchIndex } from '../../functions/index-definition'
 import Card from '@leafygreen-ui/card';
 
 
-function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, selectedFields, setSelectedFields}){
+function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState(null);
+    const suggestedFields = indexBuilder.suggestedFields;
+    const mappings = indexBuilder.mappings;
 
     const openModal = (content) => {
         setModalContent(content);
@@ -22,16 +24,24 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, select
     
     const handleFieldToggle = (type,paths) => {
         const selection = suggestedFields[type].filter((field)=>paths.includes(field.path));
-        setSelectedFields({...selectedFields,[type]:selection});
-        setMappings(buildSearchIndex(selectedFields))
+        console.log(selection);
+        setUserSelection({
+            ...userSelection,
+            fields:{
+                ...userSelection.fields,
+                [type]:selection
+            }
+        });
+        // setSelectedFields({...selectedFields,[type]:selection});
+        // setMappings(buildSearchIndex(selectedFields))
     }
 
-    useEffect(()=>{
-        if(selectedFields){
-            console.log("use effect fields",selectedFields);
-            setMappings(buildSearchIndex(selectedFields));
-        }
-    },[selectedFields]);
+    // useEffect(()=>{
+    //     if(indexBuilder.selectedFields){
+    //         console.log("use effect fields",selectedFields);
+    //         setMappings(buildSearchIndex(selectedFields));
+    //     }
+    // },[selectedFields]);
 
     return (
         
@@ -47,10 +57,10 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, select
                 }}>
                 <Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>
                 <Results openModal={openModal} textFields={suggestedFields.text}></Results>      
-                {mappings?
+                {indexBuilder.mappings?
                     <Card>
                         <div style={{height:"100%"}}>
-                            <Code language={'javascript'} style={{height:"80%"}}>
+                            <Code language={'javascript'}>
                                 {JSON.stringify({mappings:mappings},null,2)}
                             </Code>
                             <br/>
@@ -70,7 +80,7 @@ function IndexBuilder({saveIndex, suggestedFields, mappings, setMappings, select
                         {modalContent.links?.map((link) => <Link key={link.url} href={link.url}>{link.label}</Link>)}
                     </Body>
                     <hr/>
-                    <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} initialValue={selectedFields[modalContent.type].map((field)=>field.path)} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
+                    <Combobox label={"Choose suggested "+modalContent.type+" fields"} size="small" multiselect={true} initialValue={userSelection.fields[modalContent.type].map((field)=>field.path)} onChange={(e)=>handleFieldToggle(modalContent.type,e)}>
                         {modalContent.fields?.map((field) => (
                             <ComboboxOption key={field.path} value={field.path} displayName={field.path}/>
                         ))}
