@@ -134,7 +134,7 @@ function QueryTuner({connection, indexName, fields}){
                         </div>
                     </div>
                     {searchResponse?.query?
-                    <div>
+                    <div style={{marginRight:"20px"}}>
                         <H3>Query used</H3>
                         {!searchResponse.query.msg ? <></> : searchResponse.query.msg.length ? 
                             searchResponse.query.msg.map(m => (<Banner>{m}</Banner>))

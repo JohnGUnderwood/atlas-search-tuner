@@ -54,7 +54,7 @@ function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}
                 paddingTop:"10px"
                 }}>
                 <div>
-                    <Card style={{minHeight:""}}><SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/></Card>
+                    <Card style={{minHeight:"1px"}}><SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/></Card>
                     <div style={{
                         display: "grid",
                         gridTemplateColumns: "40% 60%",
