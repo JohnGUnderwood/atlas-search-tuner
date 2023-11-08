@@ -19,8 +19,7 @@ function Results({openModal,textFields}){
     }
 
     return (
-        <>
-        <Card>
+        <Card style={{marginRight:"10px"}}>
             <span style={{display:"grid",gridTemplateColumns:"40% 110px", alignItems:"end", marginBottom:"10px"}}><Subtitle>Search Results</Subtitle><Button size="xsmall" leftGlyph={<Icon glyph='Wrench'/>} variant="default" onClick={() => openModal(modalContent)} >CONFIGURE</Button></span>
             {textFields?[...Array(2)].map((e, i) => (
                 <Card key={i} style={{marginBottom:"20px"}}>
@@ -51,7 +50,6 @@ function Results({openModal,textFields}){
             }
             
         </Card>
-      </>
     )
 }
 

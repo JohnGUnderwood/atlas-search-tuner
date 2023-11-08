@@ -1,0 +1,3 @@
+.callout > div {
+    max-width: -webkit-fill-available;
+}

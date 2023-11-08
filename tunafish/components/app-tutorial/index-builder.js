@@ -47,18 +47,26 @@ function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}
         
         <>
         {suggestedFields?
-            <>
-            <SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/>
             <div style={{
                 display: "grid",
-                gridTemplateColumns: "20% 40% 40%",
+                gridTemplateColumns: "60% 40%",
                 gap: "10px",
                 paddingTop:"10px"
                 }}>
-                <Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>
-                <Results openModal={openModal} textFields={suggestedFields.text}></Results>      
-                {indexBuilder.mappings?
-                    <Card>
+                <div>
+                    <Card style={{minHeight:""}}><SearchBar openModal={openModal} autocompleteFields={suggestedFields.autocomplete}/></Card>
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "40% 60%",
+                        gap: "10px",
+                        marginTop:"10px"
+                        }}>
+                        <Facets openModal={openModal} facetFields={suggestedFields.facet}></Facets>
+                        <Results openModal={openModal} textFields={suggestedFields.text}></Results>
+                    </div>
+                </div>
+                {mappings?
+                    <Card style={{marginRight:"10px"}}>
                         <div style={{height:"100%"}}>
                             <Code language={'javascript'}>
                                 {JSON.stringify({mappings:mappings},null,2)}
@@ -69,7 +77,6 @@ function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}
                     </Card>
                     :<></>
                 }
-            </div>
             {modalContent?
                 <Modal open={open} setOpen={setOpen}>
                     <Subtitle>{modalContent.title}</Subtitle>
@@ -88,7 +95,7 @@ function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}
                     <Button style={{marginTop:"10px"}} variant="primary" onClick={()=>setOpen(false)}>Done</Button>
                 </Modal>:<></>
             }
-            </>
+            </div>
             :<></>
         }
         </>

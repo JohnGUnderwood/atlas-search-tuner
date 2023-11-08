@@ -245,13 +245,16 @@ const getIndexStatus = (name) => {
             />
           </Tab>
           <Tab name="Query Tuner">
-            <Callout variant="important" title="Build index">You need to build or select an already deployed index in order to configure queries against it.</Callout>
+            <Callout style={{marginTop:"10px"}} className="callout" variant="important" title="Build index">You need to build or select an already deployed index in order to configure queries against it.</Callout>
           </Tab>
         </Tabs>
         :<>{indexState.status == 'ready'?
           <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
             <Tab name="Index Definition">
-            <div style={{
+            <Banner style={{marginTop:"10px"}} variant='info'>You cannot modify this index, but you can switch to the Query Tuner tab to build queries against it.</Banner>
+
+              {/* <Callout style={{marginTop:"10px"}} className="callout" variant="note" title="Tune Query">You cannot modify this index, but you can switch to the Query Tuner tab to build queries against it.</Callout> */}
+              <div style={{
                 display: "grid",
                 gridTemplateColumns: "20% 40% 40%",
                 gap: "10px",
@@ -290,7 +293,7 @@ const getIndexStatus = (name) => {
                       :<></>
                     }
                     {indexState.mappings?
-                      <Card>
+                      <Card style={{marginRight:"20px"}}>
                           <div style={{height:"100%"}}>
                               <Code language={'javascript'} style={{height:"80%"}}>
                                   {JSON.stringify(indexState.mappings,null,2)}
