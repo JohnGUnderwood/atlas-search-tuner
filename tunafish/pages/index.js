@@ -38,7 +38,7 @@ const Home = () => {
   const [connection, setConnection] = useState({connected:false,uri:null,database:null,collection:null});
   const [userSelectionState, setUserSelection] = useState({
     fields:{facet:[],text:[],autocomplete:[]},
-    weights:{facet:[],text:[],autocomplete:[]},
+    weights:{},
     indexName:null
   });
   const [collectionState, setCollection] = useState({indexes:null,schema:null});
@@ -58,7 +58,7 @@ const Home = () => {
 
   
   const resetAppState = () =>{
-    setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{facet:null,text:null,autocomplete:null},indexName:null});
+    setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null});
     setCollection({indexes:null,schema:null});
     setIndex({status:null,name:null,fields:null,mappings:null,error:null});
     setIndexBuilder({name:null,status:null,mappings:null,suggestedFields:null,selectFields:null,error:null});
@@ -84,7 +84,7 @@ const Home = () => {
 
   useEffect(()=>{
     if(!userSelectionState.indexName){
-      setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{facet:null,text:null,autocomplete:null},indexName:null});
+      setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null});
       setIndex({status:null,name:null,fields:null,mappings:null,error:null});
       setIndexBuilder({name:null,status:null,mappings:null,suggestedFields:null,selectedFields:null,error:null});
       setSearchResponse({status:null,results:null,facets:null,error:null});
@@ -206,9 +206,9 @@ const searchText = (fields) => {
 
 const saveIndex = () => {
   setIndexStatus({waiting:false,ready:false,error:null});
-  postIndexMappings(mappings,indexName,connection)
+  postIndexMappings(mappings,userSelectionState.indexName,connection)
       .then(resp=> {
-          getIndexStatus(indexName);
+          getIndexStatus(userSelectionState.indexName);
       })
       .catch(err=> {
           setCreateIndexErr(err);
@@ -308,7 +308,7 @@ const getIndexStatus = (name) => {
               </div>
             </Tab>
             <Tab name="Query Tuner">
-              <QueryTuner connection={connection} indexName={indexState.name} fields={indexState.fields}/>
+              <QueryTuner connection={connection} userSelection={userSelectionState} setUserSelection={setUserSelection} index={indexState}/>
             </Tab>
           </Tabs>
           :<></>

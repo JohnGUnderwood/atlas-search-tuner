@@ -28,7 +28,7 @@ The app will run on `http://localhost:3000`
 
 You can run a pre-created image:
 ```
-$ docker run -t -i -d -p 5050:3000 --name tunafish --restart unless-stopped graboskyc/tunafish:latest
+$ docker run -t -i -d -p 5050:3000 --name tunafish --restart unless-stopped johnunderwood197/tunafish:latest
 ```
 
 Or you can build locally in docker
@@ -39,28 +39,26 @@ The app will run on `http://localhost:5050`
 
 ## How to use the app
 You will need a valid connection string and network access to an Atlas Cluster to connect.
-![connect via the UI](connect.png)
+![connect via the UI](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/connect.png)
 
-Once connected the app uses the [mongodb-schema package](https://www.npmjs.com/package/mongodb-schema) (as used by [Compass](https://www.mongodb.com/products/tools/compass)) to retrieve 1000 samples and generate a schema analysis.
+Once connected you can select an existing search index for your collection or create a new one. ![select-index](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/select-index2.png).
 
 ### Index Builder
-With the schema analysis the application is able to make suggestions for how to index different fields for search. The user is guided through a 'placeholder' search application which provides visual cues to help them construct the search experience for their app.
+When the user opts to create a new index the app uses the [mongodb-schema package](https://www.npmjs.com/package/mongodb-schema) (as used by [Compass](https://www.mongodb.com/products/tools/compass)) to retrieve 1000 samples and generate a schema analysis.With the schema analysis the application is able to make suggestions for how to index different fields for search. The user is guided through a 'placeholder' search application which provides visual cues to help them construct the search experience for their app.
 
-![visual tutorial](tutorial.png)
+![visual tutorial](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/tutorial.png)
 
 The tutorial covers three sections: facets, autocomplete (search bar), and search fields (results). When the user clicks on a section they are presented with some helpful information, links to documention, and a dropdown of suggestd fields that they can select to create a new search index defintion.
 
-![modal1](modal1.png) ![modal2](modal2.png)
+![modal1](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/modal1.png) ![mappings](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/mappings.png)
 
-Once the index defintion has been built up the user can click 'save'. This creates the new index definition. The App waits for the new index to be built and when it completes will retrieve some data to show what the user has configured.
+Once the index defintion has been built up the user can click 'deploy'. This creates the new index definition. The App waits for the new index to be built and when it completes will retrieve some data to show what the user has configured. This is the same view that is shown when the user selects an already existing index.
 
-![create index](create_index.png) ![success](index_success.png)
+![success](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/index_success.png)
 
 ### Query Tuner
-Once the index is created the user must re-submit a connection to use the new index definition (which is auto-populated in the connection form). Then they will navigate to the 'Query Tuner' tab.
+When an existing index is selected (or after a new index is built) the Query Tuner allows the user to create search queries by picking fields to search across and giving them different 'weights'. This shows the developer how to create a search query and how to apply simple boosting rules. The tuner parses the index defintion to find out which fields can be suggested for 'string' and for 'autocomplete' queries.
 
-The Query Tuner allows the user to create search queries by picking fields to search across and giving them different 'weights'. This shows the developer how to create a search query and how to apply simple boosting rules. The tuner parses the index defintion to find out which fields can be suggested for 'string' and for 'autocomplete' queries.
-
-![pick fields](tuner1.png) ![results](tuner2.png)
+![pick fields](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/tuner1.png) ![results](screenshot/tuner2.png)
 
 The user can now copy the generated query that is displayed in the UI and use it in their application or for further development in a tool such as Compass.
