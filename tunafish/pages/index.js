@@ -21,20 +21,7 @@ import { buildSearchIndex } from '../functions/index-definition'
 
 const Home = () => {
   const { pushToast, popToast } = useToast();
-  // const [connection, setConnection] = useState({connected:false}); // uri, database, collection, connected
-  const [indexes, setIndexes] = useState(null);
-  const [suggestedFields, setSuggestedFields] = useState(null);
-  const [indexName, setIndexName] = useState(null);
-  const [mappings, setMappings] = useState(null);
-  const [builder, setBuilder] = useState(false);
-  const [indexStatus, setIndexStatus] = useState({waiting:false,ready:false,error:null});
-  const [facets, setFacets] = useState(null);
-  const [results, setResults] = useState(null);
-  const [selectedFields, setSelectedFields] = useState({facet:[],text:[],autocomplete:[]});
   const [selectedTab, setSelectedTab] = useState(0);
-  const [loading, setLoading] = useState({facets:null,results:null});
-  const [createIndexErr, setCreateIndexErr] = useState(null)
-
   const [connection, setConnection] = useState({connected:false,uri:null,database:null,collection:null});
   const [userSelectionState, setUserSelection] = useState({
     fields:{facet:[],text:[],autocomplete:[]},
@@ -51,20 +38,12 @@ const Home = () => {
     status:null, //'NEW'=User is building the index|'PENDING'=Atlas is building the index|'READY' or 'STALE'=Index is ready|'FAILED'=An error occured
     error: null 
   });
-  const [indexBuilderState, setIndexBuilder] = useState({
-    name:null,
-    mappings:null,
-    suggestedFields:null,
-    error:null
-  });
   const [searchResponseState, setSearchResponse] = useState({status:null,results:null,facets:null,error:null});
-  const [buildingIndexes, setBuildingIndexes] = useState([]); //Keep track of indexes that are being built.
   const [finishedIndex, setFinishedIndex] = useState(null); //State hook for when an index finishes building
   
   const resetAppState = () =>{
     setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
     setCollection({indexes:null,schema:null});
-    // setIndex({status:null,name:null,fields:null,mappings:null,error:null});
     setIndex({name:null,status:null,mappings:null,suggestedFields:null,error:null});
     setSearchResponse({status:null,results:null,facets:null,error:null});
   }
@@ -125,12 +104,8 @@ const Home = () => {
                   error:null
                 })
               }
-              // const alreadyIndexedFields = parseSearchIndex(resp.data.latestDefinition.mappings);
-              // setSelectedFields(alreadyIndexedFields);
-              // setIndexStatus({...indexStatus,ready:true})
           }else{
               //Index does not already exist so we set status to 'NEW'
-              // setMappings({fields:{}})
               const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
               getSchema(connection).then(resp => {
                 popToast(fetchingSchema);
@@ -147,11 +122,6 @@ const Home = () => {
                   },
                   status:'NEW'
                 });
-                // setSuggestedFields({
-                //     'facet':candidates.facet,
-                //     'text':candidates.text,
-                //     'autocomplete':candidates.autocomplete
-                // });
               }).catch(error=>{
                 popToast(fetchingSchema);
                 pushToast({timeout:0,variant:"warning",title:"Schema failed",description:`Failed to get schema for ${connection.database}.${connection.collection}. ${error}`})
@@ -205,69 +175,31 @@ const Home = () => {
     }
   }
 
-  // const searchMeta = (fields) => {
-  //   searchRequest(fields,'facet',indexState.name,connection)
-  //       .then(resp => {
-  //         // setLoading({...loading,facets:false});
-  //         setSearchResponse({...searchResponseState,status:'ready'});
-  //         setSearchResponse({...searchResponseState,facets:resp.data.facet});
-  //         // setFacets(resp.data.facet);
-  //       })
-  //       .catch(err => {
-  //         // setLoading({...loading,facets:false});
-  //         setSearchResponse({...searchResponseState,status:'error'});
-  //         setSearchResponse({...searchResponseState,error:err.data});
-  //       });
-  // }
+  const deployIndex = () => {
+    setIndex({
+      ...indexState,
+      status:'PENDING'
+    });
+    postIndexMappings(indexState.mappings,userSelectionState.indexName,connection)
+        .then(resp=> {
+            getIndexStatus(userSelectionState.indexName);
+        })
+        .catch(err=> {
+            setIndex({
+              ...indexState,
+              status:'FAILED',
+              error:err
+            })
+        })
+  }
 
-// const searchText = (fields) => {
-//   searchRequest(fields,'text',indexState.name,connection)
-//       .then(resp => {
-//         setSearchResponse({...searchResponseState,status:'ready',results:resp.data});
-//         // console.log("results.text",resp.data);
-//       })
-//       .catch(err => {
-//         setSearchResponse({...searchResponseState,status:'error',error:err});
-//         // setLoading({...loading,results:false});
-//         // console.log(err);
-//       });
-// }
-
-const deployIndex = () => {
-  setIndex({
-    ...indexState,
-    status:'PENDING'
-  });
-  postIndexMappings(indexState.mappings,userSelectionState.indexName,connection)
-      .then(resp=> {
-          getIndexStatus(userSelectionState.indexName);
-      })
-      .catch(err=> {
-          setIndex({
-            ...indexState,
-            status:'FAILED',
-            error:err
-          })
-      })
-
-  // setIndexBuilder({
-  //   name:null,
-  //   mappings:null,
-  //   suggestedFields:null,
-  //   error:null
-  // });
-  
-}
-
-const getIndexStatus = (name) => {
-  pollIndexStatus(connection,name).then(resp => {
-    console.log("returned index status for",resp.name)
-    setFinishedIndex({name:resp.name,status:resp.status,mappings:resp.latestDefinition.mappings});
-  }).catch(err => {
-    // setCollection({...collectionState,indexes:[...collectionState.indexes,{name:resp.data.name,status:resp.data.status}]});
-    console.log("Index Build Error",err);
-  })
-}
+  const getIndexStatus = (name) => {
+    pollIndexStatus(connection,name).then(resp => {
+      setFinishedIndex({name:resp.name,status:resp.status,mappings:resp.latestDefinition.mappings});
+    }).catch(err => {
+      console.log("Index Build Error",err);
+    })
+  }
 
   return (
     <>
@@ -288,8 +220,6 @@ const getIndexStatus = (name) => {
         <Callout style={{marginTop:"10px"}} className="callout" variant="important" title="Building Index">
           {indexState.name} is building on Atlas...
         </Callout>
-
-        // <Banner variant="info"><Spinner description={`Building search index ${indexState.name}`}/></Banner>
         :<></>
       }
       {indexState.status == 'NEW'? 

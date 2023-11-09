@@ -14,18 +14,10 @@ import { Chip } from '@leafygreen-ui/chip';
 
 
 function QueryTuner({connection, userSelection, setUserSelection, index}){
-    // const [fields, setFields] = useState(null);
-    // const [searchIndex, setSearchIndex] = useState(null);
     const fields = index.fields;
     const indexName = userSelection.indexName;
-
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [searching, setSearching] = useState(false);
     const [query, setQuery] = useState({terms:null,filters:[]})
-    const [queryTerms, setQueryTerms] = useState(null);
     const [filters, setFilters] = useState([]);
-    // const [searchResponse, setSearchResponse] = useState({});
     const [searchResponseState, setSearchResponse] = useState({
         status:null,
         results:null,
@@ -35,15 +27,6 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     });
     const [searchPage, setSearchPage] = useState(1);
     const pageSize = 6;
-
-    // useEffect(()=>{
-    //     if(indexName){
-    //         setSearchResponse({});
-    //         setWeights({});
-    //         setQueryTerms(null);
-    //         // setFields(null);
-    //     }
-    // },[indexName]);
 
     useEffect(()=>{
         if(query.terms){
@@ -68,14 +51,9 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
         console.log(event.target.value)
         setSearchResponse({...searchResponseState,status:"loading"});
         setQuery({terms:event.target.value,filters:[]});
-        // searchRequest(query, userSelection.weights, indexName, connection, searchPage, pageSize)
-        //     .then(resp => {setSearchResponse({...searchResponseState,status:"ready",results:resp.data.results,facets:resp.data.facets,query:resp.data.query})})
-        //     .catch(error =>  {setSearchResponse({...searchResponseState,status:"error",error:error})});
     };
     
     const removeFilter = (index) => {
-    //     console.log(filters)
-    //     console.log(`remove ${index}`)
         setQuery({
             ...query,
             filters:filters.toSpliced(index,1)
@@ -83,7 +61,6 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     }
 
     const handleSearchClick = () => {
-        // setSearching(true);
         setSearchResponse({
             ...searchResponseState,
             status:'loading'
@@ -92,9 +69,6 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
             ...query,
             filters:[]
         });
-        // searchRequest(query, userSelection.weights, indexName, connection, searchPage, pageSize)
-        //     .then(resp => {setSearchResponse(resp.data);setSearching(false);})
-        //     .catch(console.error);
     };
 
 

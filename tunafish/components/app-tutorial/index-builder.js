@@ -7,7 +7,6 @@ import { Subtitle, Body, Link, Description } from '@leafygreen-ui/typography';
 import { Combobox, ComboboxOption } from '@leafygreen-ui/combobox';
 import Code from '@leafygreen-ui/code';
 import Button from '@leafygreen-ui/button';
-import { buildSearchIndex } from '../../functions/index-definition'
 import Card from '@leafygreen-ui/card';
 
 
@@ -32,16 +31,7 @@ function IndexBuilder({deployIndex, indexBuilder, userSelection, setUserSelectio
                 [type]:selection
             }
         });
-        // setSelectedFields({...selectedFields,[type]:selection});
-        // setMappings(buildSearchIndex(selectedFields))
     }
-
-    // useEffect(()=>{
-    //     if(indexBuilder.selectedFields){
-    //         console.log("use effect fields",selectedFields);
-    //         setMappings(buildSearchIndex(selectedFields));
-    //     }
-    // },[selectedFields]);
 
     return (
         
