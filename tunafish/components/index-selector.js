@@ -9,6 +9,7 @@ import { Chip } from '@leafygreen-ui/chip';
 function IndexSelector({indexes,userSelection,setUserSelection}){
     const [createNew, setCreateNew] = useState(false);
     const [name, setName] = useState(userSelection.indexName);
+    const [status, setStatus] = useState(null);
 
     const handleNameInput = (input) => {
         setName(input);
@@ -18,7 +19,16 @@ function IndexSelector({indexes,userSelection,setUserSelection}){
         setUserSelection({...userSelection,indexName:name});
     }
 
-    useEffect(()=>{},[userSelection.indexName]);
+    useEffect(()=>{
+        if(indexes && indexes.map(i=>i.name).includes(userSelection.indexName)){
+            const status = indexes.filter(i=>i.name==userSelection.indexName)[0].status;
+            setStatus(status);
+        }else{
+            setStatus('NEW');
+        }
+    },[userSelection.indexName,indexes]);
+
+    useEffect(()=>{},[status]);
 
     return (
         <>
@@ -42,7 +52,7 @@ function IndexSelector({indexes,userSelection,setUserSelection}){
                     <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
                         <ComboboxGroup label="EXISTING INDEXES">
                         {indexes.map(index => (
-                            <ComboboxOption key={index} value={index} onClick={()=>{setCreateNew(false)}}></ComboboxOption>
+                            <ComboboxOption key={index.name} value={index.name} description={`${index.status}`}  onClick={()=>{setCreateNew(false)}}></ComboboxOption>
                         ))}
                         </ComboboxGroup>
                 </Combobox>:
@@ -69,7 +79,9 @@ function IndexSelector({indexes,userSelection,setUserSelection}){
                 }}
                 >
                 {/* <H3>{`Search index: ${userSelection.indexName}`}</H3> */}
-                {indexes.includes(userSelection.indexName)?<Chip label={`DEPLOYED: ${userSelection.indexName}`} variant="green" baseFontSize={16}/>:<Chip label={`CONFIGURING: ${userSelection.indexName}`} variant="yellow" baseFontSize={16}/>}
+                {(status=='READY' || status=='STALE')?<><H3>{userSelection.indexName}</H3><Chip label={status} variant="green" baseFontSize={16}/></>:<></>}
+                {status=='PENDING'?<><H3>{userSelection.indexName}</H3><Chip label={status} variant="yellow" baseFontSize={16}/></>:<></>}
+                {status=='NEW'?<><H3>{userSelection.indexName}</H3><Chip label={status} variant="blue" baseFontSize={16}/></>:<></>}
                 <Button leftGlyph={<Icon glyph='MultiDirectionArrow'/>} variant="default" onClick={()=>{setUserSelection({...userSelection,indexName:null});}}>Change index</Button>
                 </div>
                 :<></>

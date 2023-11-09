@@ -30,7 +30,8 @@ function buildQueryFromWeights(terms,weights,filters){
     var searchStage = {
       $search:{
         compound:{
-          must:[],
+          should:[],
+          minimumShouldMatch:1
         }
       }
     }
@@ -85,7 +86,7 @@ function buildQueryFromWeights(terms,weights,filters){
                 finalWeight = -1/weight
             }
             if(type == 'text'){
-                searchStage['$search']['compound']['must'].push(
+                searchStage['$search']['compound']['should'].push(
                     {
                         text:{
                             query:terms,
@@ -95,7 +96,7 @@ function buildQueryFromWeights(terms,weights,filters){
                     }
                 )
             }else if(type == "autocomplete"){
-                searchStage['$search']['compound']['must'].push(
+                searchStage['$search']['compound']['should'].push(
                     {
                         autocomplete:{
                             query:terms,
@@ -110,7 +111,7 @@ function buildQueryFromWeights(terms,weights,filters){
         });
     });
 
-    if(searchStage['$search']['compound']['must'].length == 0){
+    if(searchStage['$search']['compound']['should'].length == 0){
         if(terms != ""){
             searchStage['$search'].compound.must.push({text:{query:terms,path:{wildcard:"*"}}})
         }else{
@@ -167,35 +168,8 @@ function buildQueryFromWeights(terms,weights,filters){
 }
 
 function buildFacetQueryFromFields(fields){
-    var searchOperator = {
-        compound:{
-            should:[ ]
-        }
-    }
-
-    let types = Object.keys(fields);
-
-    if(!types.includes('string')){
-        searchOperator.compound.should.push({wildcard:{query:"*",path:{wildcard:"*"},allowAnalyzedField: true}})
-    }else{
-        searchOperator = {
-            compound:{
-                should:[ 
-                    {
-                        wildcard:{
-                            query:"*",
-                            path:fields.string.map(field => {field.path}),
-                            allowAnalyzedField: true
-                        }
-                    }
-                ]
-            }
-        }
-    }
-
     var facets = {}
-
-    if(types.includes('facet')){
+    if(fields.facet.length>0){
         fields.facet.forEach(field => {
             if(field.types.includes('String')){
                 facets[field.path] = {
@@ -211,17 +185,18 @@ function buildFacetQueryFromFields(fields){
                 }
             }
         })
-    }
-
-    const searchStage = {
-        $searchMeta:{
-            facet:{
-                operator:searchOperator,
-                facets:facets
+        const searchStage = {
+            $searchMeta:{
+                facet:{
+                    operator:{wildcard:{query:"*",path:{wildcard:"*"},allowAnalyzedField: true}},
+                    facets:facets
+                }
             }
         }
+        return searchStage;
+    }else{
+        return null;
     }
-    return searchStage;
 }
 
 function buildProjectionFromWeights(weights){
@@ -320,27 +295,32 @@ export default async function handler(req, res) {
 
                     }else if(req.body.fields){
                         const fields = req.body.fields;
-                       
-                        const searchStage = buildFacetQueryFromFields(fields);
-                        searchStage['$searchMeta']['index'] = index;
+
+                        const textFields = fields.text.map(field => field.path);
+                        const autocompleteFields = fields.autocomplete.map(field => field.path);
+                        const fieldPaths = textFields.concat(autocompleteFields);
+                        var projectStage = {$project:{"_id":1}};
+                        fieldPaths.forEach(field => {
+                            projectStage['$project'][field]=1;
+                        });
+
+                        const facetStage = buildFacetQueryFromFields(fields);
+
+                        var facets = [];
+                        var results = [];
                         try{
-                            const facets = await getResults(client,req.body.connection,[searchStage])
-                            const projectStage = {$project:{"_id":1}};
-                            const textFields = fields.text.map(field => field.path);
-                            const autocompleteFields = fields.autocomplete.map(field => field.path);
-                            const fieldPaths = textFields.concat(autocompleteFields);
-                            fieldPaths.forEach(field => {
-                                projectStage['$project'][field]=1;
-                            });
-                            const pipeline =[
-                                {$limit:1},
-                                projectStage,
-                            ];
-                            const results = await getResults(client,req.body.connection,pipeline)
-                            res.status(200).json({facets:facets[0].facet,results:results});
+                            if(facetStage){
+                                facetStage['$searchMeta']['index'] = index;
+                                facets = await getResults(client,req.body.connection,[facetStage]);
+                                facets = facets[0].facet
+                            }
+                            results = await getResults(client,req.body.connection,[{$limit:1},projectStage])
                         }catch(error){
                             res.status(405).send(error);
+                        }finally{
+                            res.status(200).json({facets:facets,results:results});
                         }
+
                     }else{
                         res.status(400).send(`Request body missing fields or weights`);
                     }

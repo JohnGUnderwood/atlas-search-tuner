@@ -111,8 +111,8 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                         <br/>
                         <Button style={{marginBottom:"10px"}} onClick={handleSearchClick}>Search</Button>
                         <br/>
-                        {filters.length > 0?
-                            filters.map((filter,index) => (
+                        {query.filters.length > 0?
+                            query.filters.map((filter,index) => (
                                 <Chip label={filter.value}
                                     onDismiss={() => {removeFilter(index)}}
                                     key={filter.value}
@@ -127,7 +127,7 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                                     <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
                                         <Subtitle key={facet}>{facet}</Subtitle>
                                         {searchResponseState.facets[facet].buckets.map(bucket => (
-                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {setFilters([...filters,{value:bucket._id,name:facet}])}} key={`${bucket._id}_label`}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {setQuery({...query,filters:[...query.filters,{value:bucket._id,name:facet}]})}} key={`${bucket._id}_label`}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
                                         ))}<br/>
                                     </div>
                                 ))}

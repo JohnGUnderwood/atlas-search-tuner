@@ -39,14 +39,17 @@ const Home = () => {
   const [userSelectionState, setUserSelection] = useState({
     fields:{facet:[],text:[],autocomplete:[]},
     weights:{},
-    indexName:null
+    indexName:null,
+    banners:{query:true,index:true} // Whether banner messages are shown
   });
-  const [collectionState, setCollection] = useState({indexes:null,schema:null});
+  const [collectionState, setCollection] = useState({indexes:null,schema:null}); // indexes = Array( {name: , status, } )
   const [indexState, setIndex] = useState({
     name:null,
     fields:null,
     mappings:null,
-    status:null//'building'=Atlas is building the index|'ready'=Index is ready|'error'=An error occured
+    suggestedFields:null, //Used when building new index
+    status:null, //'NEW'=User is building the index|'PENDING'=Atlas is building the index|'READY' or 'STALE'=Index is ready|'FAILED'=An error occured
+    error: null 
   });
   const [indexBuilderState, setIndexBuilder] = useState({
     name:null,
@@ -55,13 +58,14 @@ const Home = () => {
     error:null
   });
   const [searchResponseState, setSearchResponse] = useState({status:null,results:null,facets:null,error:null});
-
+  const [buildingIndexes, setBuildingIndexes] = useState([]); //Keep track of indexes that are being built.
+  const [finishedIndex, setFinishedIndex] = useState(null); //State hook for when an index finishes building
   
   const resetAppState = () =>{
-    setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null});
+    setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
     setCollection({indexes:null,schema:null});
-    setIndex({status:null,name:null,fields:null,mappings:null,error:null});
-    setIndexBuilder({name:null,status:null,mappings:null,suggestedFields:null,selectFields:null,error:null});
+    // setIndex({status:null,name:null,fields:null,mappings:null,error:null});
+    setIndex({name:null,status:null,mappings:null,suggestedFields:null,error:null});
     setSearchResponse({status:null,results:null,facets:null,error:null});
   }
 
@@ -84,40 +88,64 @@ const Home = () => {
 
   useEffect(()=>{
     if(!userSelectionState.indexName){
-      setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null});
-      setIndex({status:null,name:null,fields:null,mappings:null,error:null});
-      setIndexBuilder({name:null,status:null,mappings:null,suggestedFields:null,selectedFields:null,error:null});
+      setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
+      setIndex({status:null,name:null,fields:null,mappings:null,suggestedFields:null,error:null});
+      // setIndexBuilder({name:null,status:null,mappings:null,suggestedFields:null,selectedFields:null,error:null});
       setSearchResponse({status:null,results:null,facets:null,error:null});
+      const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
+      fetchIndexes(connection).then(resp=>{
+          setCollection({...collectionState,indexes:resp.data})
+          popToast(fetchingIndexes);
+          pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
+      })
+      .catch(error=>{
+          popToast(fetchingIndexes)
+          pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
+      });
+
     }else if(userSelectionState.indexName){
       const indexName = userSelectionState.indexName;
       fetchIndex(connection,indexName).then(resp => {
           if(resp.data){
               // Index already exists so we set indexState variables.
-              setIndex({
-                name:indexName,
-                mappings:resp.data.latestDefinition.mappings,
-                fields:parseSearchIndex(resp.data.latestDefinition.mappings),
-                status:"ready"
-              })
+              if(resp.data.status=="FAILED"){
+                setIndex({
+                  name:indexName,
+                  mappings:resp.data.latestDefinition.mappings,
+                  fields:parseSearchIndex(resp.data.latestDefinition.mappings),
+                  status:resp.data.status,
+                  error:"Index failed to build."
+                })
+              }else{
+                setIndex({
+                  name:indexName,
+                  mappings:resp.data.latestDefinition.mappings,
+                  fields:parseSearchIndex(resp.data.latestDefinition.mappings),
+                  status:resp.data.status,
+                  error:null
+                })
+              }
               // const alreadyIndexedFields = parseSearchIndex(resp.data.latestDefinition.mappings);
               // setSelectedFields(alreadyIndexedFields);
               // setIndexStatus({...indexStatus,ready:true})
           }else{
-              //Index does not already exist so we use the builder.
+              //Index does not already exist so we set status to 'NEW'
               // setMappings({fields:{}})
               const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
               getSchema(connection).then(resp => {
                 popToast(fetchingSchema);
                 pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
                 const candidates = getCandidates(resp.data);
-                setIndexBuilder({
+                setIndex({
                   name:indexName,
                   mappings:{fields:{}},
+                  fields:null,
                   suggestedFields:{
                     'facet':candidates.facet,
                     'text':candidates.text,
                     'autocomplete':candidates.autocomplete
-                  }
+                  },
+                  status:'NEW'
                 });
                 // setSuggestedFields({
                 //     'facet':candidates.facet,
@@ -135,33 +163,36 @@ const Home = () => {
 
   useEffect(()=>{
     if(Object.keys(userSelectionState.fields).length>0){
-      setIndexBuilder({
-        ...indexBuilderState,
-        selectedFields:userSelectionState.fields,
+      setIndex({
+        ...indexState,
+        fields:userSelectionState.fields,
         mappings:buildSearchIndex(userSelectionState.fields)
       });
     }
   },[userSelectionState.fields])
 
   useEffect(()=>{
-      if(indexState.status == 'ready'){
-          setSearchResponse({...searchResponseState,status:'loading'});
-          searchRequest(indexState.fields,indexState.name,connection)
+      if(indexState.status == 'READY' || indexState.status == 'STALE'){
+        setSearchResponse({...searchResponseState,status:'loading'});
+        searchRequest(indexState.fields,indexState.name,connection)
           .then(resp => {
             setSearchResponse({
               status:'ready',
               results:resp.data.results,
               facets:resp.data.facets
             })
-            // console.log("results.text",resp.data);
           })
           .catch(err => {
             setSearchResponse({status:'error',error:err});
-            // setLoading({...loading,results:false});
-            // console.log(err);
           });
       }
   },[indexState.status]);
+
+  useEffect(() =>{
+    if(finishedIndex && finishedIndex.name == indexState.name){
+      setIndex({...indexState,status:finishedIndex.status,mappings:finishedIndex.mappings});
+    }
+  },[finishedIndex])
 
   const handleConnectionChange = (name,value) => {
     if(name=="namespace"){
@@ -174,52 +205,68 @@ const Home = () => {
     }
   }
 
-  const searchMeta = (fields) => {
-    searchRequest(fields,'facet',indexState.name,connection)
-        .then(resp => {
-          // setLoading({...loading,facets:false});
-          setSearchResponse({...searchResponseState,status:'ready'});
-          setSearchResponse({...searchResponseState,facets:resp.data.facet});
-          // setFacets(resp.data.facet);
-        })
-        .catch(err => {
-          // setLoading({...loading,facets:false});
-          setSearchResponse({...searchResponseState,status:'error'});
-          setSearchResponse({...searchResponseState,error:err});
-        });
-  }
+  // const searchMeta = (fields) => {
+  //   searchRequest(fields,'facet',indexState.name,connection)
+  //       .then(resp => {
+  //         // setLoading({...loading,facets:false});
+  //         setSearchResponse({...searchResponseState,status:'ready'});
+  //         setSearchResponse({...searchResponseState,facets:resp.data.facet});
+  //         // setFacets(resp.data.facet);
+  //       })
+  //       .catch(err => {
+  //         // setLoading({...loading,facets:false});
+  //         setSearchResponse({...searchResponseState,status:'error'});
+  //         setSearchResponse({...searchResponseState,error:err.data});
+  //       });
+  // }
 
-const searchText = (fields) => {
-  searchRequest(fields,'text',indexState.name,connection)
-      .then(resp => {
-        setSearchResponse({...searchResponseState,status:'ready'});
-        setSearchResponse({...searchResponseState,results:resp.data});
-        // console.log("results.text",resp.data);
-      })
-      .catch(err => {
-        setSearchResponse({...searchResponseState,status:'error'});
-        setSearchResponse({...searchResponseState,error:err});
-        // setLoading({...loading,results:false});
-        // console.log(err);
-      });
-}
+// const searchText = (fields) => {
+//   searchRequest(fields,'text',indexState.name,connection)
+//       .then(resp => {
+//         setSearchResponse({...searchResponseState,status:'ready',results:resp.data});
+//         // console.log("results.text",resp.data);
+//       })
+//       .catch(err => {
+//         setSearchResponse({...searchResponseState,status:'error',error:err});
+//         // setLoading({...loading,results:false});
+//         // console.log(err);
+//       });
+// }
 
-const saveIndex = () => {
-  setIndexStatus({waiting:false,ready:false,error:null});
-  postIndexMappings(mappings,userSelectionState.indexName,connection)
+const deployIndex = () => {
+  setIndex({
+    ...indexState,
+    status:'PENDING'
+  });
+  postIndexMappings(indexState.mappings,userSelectionState.indexName,connection)
       .then(resp=> {
           getIndexStatus(userSelectionState.indexName);
       })
       .catch(err=> {
-          setCreateIndexErr(err);
+          setIndex({
+            ...indexState,
+            status:'FAILED',
+            error:err
+          })
       })
+
+  // setIndexBuilder({
+  //   name:null,
+  //   mappings:null,
+  //   suggestedFields:null,
+  //   error:null
+  // });
+  
 }
 
 const getIndexStatus = (name) => {
-  setIndexStatus({...indexStatus,waiting:true})
   pollIndexStatus(connection,name).then(resp => {
-      setIndexStatus({...indexStatus,ready:true,waiting:false})
-  }).catch(err => {setIndexStatus({...indexStatus,waiting:false,error:err})})
+    console.log("returned index status for",resp.name)
+    setFinishedIndex({name:resp.name,status:resp.status,mappings:resp.latestDefinition.mappings});
+  }).catch(err => {
+    // setCollection({...collectionState,indexes:[...collectionState.indexes,{name:resp.data.name,status:resp.data.status}]});
+    console.log("Index Build Error",err);
+  })
 }
 
   return (
@@ -236,34 +283,38 @@ const getIndexStatus = (name) => {
           />
         :<></>
       }
-      {indexState.status == 'error'?<Banner variant="danger">{indexState.error}</Banner>:<></>}
-      {indexState.status == 'building'?<Banner variant="info"><Spinner description={`Building search index ${indexState.name}`}/></Banner>:<></>}
-      {indexBuilderState.name? //Has the builder name been set?
+      {indexState.status == 'FAILED'?<Banner variant="danger">{JSON.stringify(indexState.error)}</Banner>:<></>}
+      {indexState.status == 'PENDING'?
+        <Callout style={{marginTop:"10px"}} className="callout" variant="important" title="Building Index">
+          {indexState.name} is building on Atlas...
+        </Callout>
+
+        // <Banner variant="info"><Spinner description={`Building search index ${indexState.name}`}/></Banner>
+        :<></>
+      }
+      {indexState.status == 'NEW'? 
         <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
           <Tab name="Index Builder">
-            <IndexBuilder saveIndex={saveIndex} indexBuilder={indexBuilderState} userSelection={userSelectionState} setUserSelection={setUserSelection}  
+            <IndexBuilder deployIndex={deployIndex} indexBuilder={indexState} userSelection={userSelectionState} setUserSelection={setUserSelection}  
             />
           </Tab>
           <Tab name="Query Tuner">
             <Callout style={{marginTop:"10px"}} className="callout" variant="important" title="Build index">You need to build or select an already deployed index in order to configure queries against it.</Callout>
           </Tab>
         </Tabs>
-        :<>{indexState.status == 'ready'?
+        :<>{(indexState.status == 'READY' || indexState.status == 'STALE')? //If no name set on indexBuilderState then display existing index
           <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
             <Tab name="Index Definition">
-            <Banner style={{marginTop:"10px"}} variant='info'>You cannot modify this index, but you can switch to the Query Tuner tab to build queries against it.</Banner>
-
-              {/* <Callout style={{marginTop:"10px"}} className="callout" variant="note" title="Tune Query">You cannot modify this index, but you can switch to the Query Tuner tab to build queries against it.</Callout> */}
+            {userSelectionState.banners.index?<Banner style={{marginTop:"10px"}} dismissible={true} onClose={()=>{setUserSelection({...userSelectionState,banners:{...userSelectionState.banners,index:false}})}} variant='info'>You cannot modify this index, but you can switch to the <a style={{cursor:"pointer"}} onClick={() =>setSelectedTab(1)}>Query Tuner</a> to build queries against it.</Banner>:<></>}
+            {searchResponseState.status == 'loading'?<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting sample data ...'></Spinner></div>:<></>}
+            {searchResponseState.status == 'error'?<Banner variant='danger'>{JSON.stringify(searchResponseState.error)}</Banner>:<></>}
+            {searchResponseState.status == 'ready'?  
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "20% 40% 40%",
                 gap: "10px",
                 paddingTop:"10px"
                 }}>
-                  {searchResponseState.status == 'loading'?<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description='Getting sample data ...'></Spinner></div>:<></>}
-                  {searchResponseState.status == 'error'?<Banner variant='danger'>{searchResponseState.error}</Banner>:<></>}
-                  {searchResponseState.status == 'ready'?
-                    <>
                     {searchResponseState.facets?
                       <Card>
                       {Object.keys(searchResponseState.facets).map(facet => (
@@ -295,19 +346,19 @@ const getIndexStatus = (name) => {
                     {indexState.mappings?
                       <Card style={{marginRight:"20px"}}>
                           <div style={{height:"100%"}}>
-                              <Code language={'javascript'} style={{height:"80%"}}>
+                              <Code language={'javascript'}>
                                   {JSON.stringify(indexState.mappings,null,2)}
                               </Code>
                           </div>
                       </Card>
                       :<></>
                     }
-                    </>
-                    :<></>
-                  }
               </div>
+              :<></>
+            }
             </Tab>
             <Tab name="Query Tuner">
+              {userSelectionState.banners.query?<Banner style={{marginTop:"10px"}} dismissible={true} onClose={()=>{setUserSelection({...userSelectionState,banners:{...userSelectionState.banners,query:false}})}} variant='info'>Not seeing the results you expect? <a style={{cursor:"pointer"}} onClick={() =>setSelectedTab(0)}>Check your index definition!</a></Banner>:<></>}
               <QueryTuner connection={connection} userSelection={userSelectionState} setUserSelection={setUserSelection} index={indexState}/>
             </Tab>
           </Tabs>
@@ -329,17 +380,16 @@ async function pollIndexStatus(connection,name){
       try{
           response = await axios.post('api/post/atlas-search/index/status',{connection:connection,name:name});
           const status = response.data.status;
-          console.log(status)
-          if(status == "READY" || status == "STALE"){
+          console.log(name,status);
+          if(status != "PENDING"){
               done = true;
-          }else if(status == "FAILED"){
-              throw new Error(`Search index '${connection.database}.${connection.collection}:${name}' failed to build`,{cause:"indexNameStatusFailed"})
           }
       }catch(error){
           throw error
       }
       await wait(5000)
   }
+  return response.data;
 }
 
 function postIndexMappings(mappings,indexName,connection){
@@ -390,7 +440,6 @@ function searchRequest(fields,indexName,conn) {
           { headers : 'Content-Type: application/json'}
       ).then(response => resolve(response))
       .catch((error) => {
-          console.log(error)
           resolve(error.response.data);
       })
   });

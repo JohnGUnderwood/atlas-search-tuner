@@ -11,7 +11,7 @@ import { buildSearchIndex } from '../../functions/index-definition'
 import Card from '@leafygreen-ui/card';
 
 
-function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}){
+function IndexBuilder({deployIndex, indexBuilder, userSelection, setUserSelection}){
     const [open, setOpen] = useState(false);
     const [modalContent, setModalContent] = useState(null);
     const suggestedFields = indexBuilder.suggestedFields;
@@ -72,7 +72,7 @@ function IndexBuilder({saveIndex, indexBuilder, userSelection, setUserSelection}
                                 {JSON.stringify({mappings:mappings},null,2)}
                             </Code>
                             <br/>
-                            <Button onClick={saveIndex}>Deploy</Button>
+                            <Button onClick={deployIndex}>Deploy</Button>
                         </div>
                     </Card>
                     :<></>

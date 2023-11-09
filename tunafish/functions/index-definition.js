@@ -157,7 +157,7 @@ export function buildSearchIndex(fields){
         //Do not use mappings if text fields defined.
         mappings.dynamic = false;
     }else{
-        //Use dynamice mappings if no text fields defined. This ensures we get results for test queries.
+        //Use dynamic mappings if no text fields defined. This ensures we get results for test queries.
         mappings.dynamic = true;
     }
 

@@ -109,8 +109,8 @@ export default async function handler(req,res){
               res.status(400).send(`${error}`)
             }
           }else{
-              console.log(`${req.body} missing required parameters (name,mappings,connection)`)
-              res.status(400).send(`${req.body} missing required parameters (name,mappings,connection)`)
+              console.log(`${JSON.stringify(req.body)} missing required parameters (name,mappings,connection)`)
+              res.status(400).send(`${JSON.stringify(req.body)} missing required parameters (name,mappings,connection)`)
           }
         }else if(type == "status"){
           if(req.body.connection && req.body.name){
@@ -121,14 +121,14 @@ export default async function handler(req,res){
               res.status(400).send(`${error}`);
             }
           }else{
-              console.log(`${req.body} missing required parameters (name,connection)`)
-              res.status(400).send(`${req.body} missing required parameters (name,connection)`)
+              console.log(`${JSON.stringify(req.body)} missing required parameters (name,connection)`)
+              res.status(400).send(`${JSON.stringify(req.body)} missing required parameters (name,connection)`)
           }
         
         }else if(type=="list"){
           try{
             const response = await client.db(conn.database).collection(conn.collection).listSearchIndexes().toArray();
-            res.status(200).json(response.map(r=>r.name)).end();
+            res.status(200).json(response.map(r=>({name:r.name,status:r.status}))).end();
           }catch(error){
             res.status(400).send(`${error}`)
           }
