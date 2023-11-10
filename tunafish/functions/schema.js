@@ -7,29 +7,6 @@ function avgLenArrayVals(array){
     return sum/array.length
 }
 
-function addArrayValToObj(obj,key,value){
-    if(key in obj){
-        obj[key].push(value)
-    }else{
-        obj = {...obj,[key]:[value]}
-    }
-    return obj
-}
-
-function mergeObjectsArrays(obj1,obj2){
-    var newObj = {}
-    Object.keys(obj1).forEach(key =>{
-        if(key in obj2){
-            newObj[key] = obj1[key].concat(obj2[key])
-            delete obj2[key]
-        }else{
-            newObj[key] = obj1[key]
-        }
-    })
-
-    return {...obj2,...newObj}
-}
-
 function getAllFields(output,fields){
 
     fields.forEach(field => {
@@ -38,8 +15,10 @@ function getAllFields(output,fields){
             output.push(type);
         }else if(type.name=="Array"){
             var arrayType = type.types.sort(function(a,b){b.probability-a.probability})[0];
-            arrayType = {...arrayType,averageLength:type.averageLength,arrayCount:type.count}
-            output.push(arrayType);
+            if(arrayType.bsonType != "Document" && arrayType.bsonType != "Array"){ // Doesn't handle embedded documents or array of arrays.
+                arrayType = {...arrayType,averageLength:type.averageLength,arrayCount:type.count}
+                output.push(arrayType);
+            }
         }else if(type.name=="Document"){
             getAllFields(output,type.fields);
         }
