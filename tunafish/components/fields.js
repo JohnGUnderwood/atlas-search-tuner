@@ -10,10 +10,10 @@ function SearchResultFields({doc,parent}){
     }
 
     return (
-        children.map((child,index)=>(
+        children.filter(child=>doc[child]).map((child,index)=>(
             <>
             {typeof doc[child] === 'object'?
-                Array.isArray(doc[child]) ?
+                (Array.isArray(doc[child]) && doc[child].length>0) ?
                     <Label key={`${parent}${index}`}>
                         {child}
                         {doc[child].reduce((display, item, index)=>{

@@ -92,7 +92,7 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                                     <div key={`${facet}_div`} style={{paddingLeft:"10px"}}>
                                         <Subtitle key={facet}>{facet}</Subtitle>
                                         {searchResponseState.facets[facet].buckets.map(bucket => (
-                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {setQuery({...query,filters:[...query.filters,{value:bucket._id,name:facet}]})}} key={`${bucket._id}_label`}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
+                                            <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{cursor:"pointer",paddingRight:"5px", color:"blue"}} onClick={() => {setQuery({...query,filters:[...query.filters,{value:bucket._id,name:facet}]})}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
                                         ))}<br/>
                                     </div>
                                 ))}
@@ -120,11 +120,12 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                                 {(searchResponseState.results && searchResponseState.results.length > 0)?
                                     <>{searchResponseState.results.map(result=>(
                                         <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
-                                            <InlineCode><em>score:</em> {result.score}</InlineCode>
+                                            <InlineCode key={`${result._id}-score`} ><em key={`${result._id}-score-em`} >score:</em> {result.score}</InlineCode>
                                             <br/>
-                                            <SearchResultFields doc={result}></SearchResultFields>
+                                            <SearchResultFields key={`${result._id}-fields`} doc={result}></SearchResultFields>
                                         </Card>
-                                        ))}</>
+                                        ))
+                                    }</>
                                     :
                                     <SearchResult clickable="false">
                                         <Subtitle>No Results</Subtitle>
