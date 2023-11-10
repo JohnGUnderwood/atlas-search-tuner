@@ -29,12 +29,13 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     const pageSize = 6;
 
     useEffect(()=>{
+        console.log(query,userSelection.weights,userSelection.facets);
         if(query.terms){
             setSearchResponse({
                 ...searchResponseState,
                 status:'loading'
             });
-            searchRequest(query, userSelection.weights, indexName, connection, searchPage, pageSize)
+            searchRequest(query, userSelection, indexName, connection, searchPage, pageSize)
                 .then(resp => {setSearchResponse({...searchResponseState,status:"ready",results:resp.data.results,facets:resp.data.facets,query:resp.data.query})})
                 .catch(error => {setSearchResponse({...searchResponseState,status:"error",error:error})});
         }
@@ -47,6 +48,13 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
         })
     }
 
+    const setFacets = (facets) =>{
+        setUserSelection({
+            ...userSelection,
+            facets:facets
+        })
+    }
+
     const handleQueryChange = (event) => {
         setQuery({terms:event.target.value,filters:[]});
     };
@@ -54,7 +62,7 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     const removeFilter = (index) => {
         setQuery({
             ...query,
-            filters:filters.toSpliced(index,1)
+            filters:query.filters.toSpliced(index,1)
         })
     }
 
@@ -75,20 +83,9 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                     gap: "10px",
                     marginTop:"10px"}}>
                     <div>
-                        <SelectFieldWeights fields={fields} weights={userSelection.weights} setWeights={setWeights}></SelectFieldWeights>
+                        <SelectFieldWeights fields={fields} weights={userSelection.weights} setWeights={setWeights} facets={userSelection.facets} setFacets={setFacets}></SelectFieldWeights>
                         <br/>
                         <Button style={{marginBottom:"10px"}} onClick={handleSearchClick}>Search</Button>
-                        <br/>
-                        {query.filters.length > 0?
-                            query.filters.map((filter,index) => (
-                                <Chip label={filter.value}
-                                    onDismiss={() => {removeFilter(index)}}
-                                    key={filter.value}
-                                    baseFontSize={16}
-                                />
-                            ))
-                            :<></>
-                        }
                         {(searchResponseState.status == 'ready' && searchResponseState.facets)?
                             <Card>
                                 {Object.keys(searchResponseState.facets).map(facet => (
@@ -106,10 +103,21 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                     <div>
                         <div style={{paddingLeft:"15px"}}>
                             <SearchInput onChange={handleQueryChange} aria-label="some label" style={{marginBottom:"20px"}}></SearchInput>
+                            {query.filters.length > 0?
+                                query.filters.map((filter,index) => (
+                                    <Chip label={filter.value}
+                                        onDismiss={() => {removeFilter(index)}}
+                                        key={filter.value}
+                                        baseFontSize={16}
+                                    />
+                                ))
+                                :<></>
+                            }
                             {searchResponseState.status == 'loading'?<div style={{display:"flex", marginLeft:"50%"}}><Spinner displayOption="large-vertical" description="Getting Search Results..."></Spinner></div>:<></>}
                             {searchResponseState.status == 'error'?<Banner variant="danger">{JSON.stringify(searchResponseState.error)}</Banner>:<></>}
                             {searchResponseState.status == 'ready'?
-                                <>{(searchResponseState.results && searchResponseState.results.length > 0)?
+                                <>
+                                {(searchResponseState.results && searchResponseState.results.length > 0)?
                                     <>{searchResponseState.results.map(result=>(
                                         <Card key={result._id} style={{clear:"both",marginBottom:"20px"}} clickable="false">
                                             <InlineCode><em>score:</em> {result.score}</InlineCode>
@@ -143,6 +151,7 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
                                 </p>
                                 :<></>
                             }
+                            <H3>Facet Query used</H3>
                             {searchResponseState.query.searchMetaStage?
                                 <p>
                                     <Code language={'javascript'}>
@@ -161,10 +170,10 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     )
 }
 
-function searchRequest(query, weights,indexName, conn, page, rpp) {
+function searchRequest(query, userSelection,indexName, conn, page, rpp) {
     return new Promise((resolve) => {
         axios.post(`api/post/atlas-search/query?terms=${query.terms}&page=${page}&rpp=${rpp}`,
-            { weights : weights, connection: conn, index:indexName, filters:query.filters},
+            { weights : userSelection.weights, facets: userSelection.facets, connection: conn, index:indexName, filters:query.filters},
             { headers : 'Content-Type: application/json'},
         ).then(response => resolve(response))
         .catch((error) => {

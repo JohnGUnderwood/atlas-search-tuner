@@ -10,7 +10,7 @@ function isEmpty(obj) {
     return true;
   }
 
-function buildQueryFromWeights(terms,weights,filters){
+function buildQuery(terms,weights,facets,filters){
     var msg = [];
     if(weights === undefined || isEmpty(weights)){
         msg.push('No field weights defined. Searched using wildcard')
@@ -128,43 +128,50 @@ function buildQueryFromWeights(terms,weights,filters){
         }
     }
 
-    let facetTypes = Object.keys(weights).filter(type => ['stringFacet','numberFacet','dataFacet'].includes(type));
-    facetTypes.forEach((type) => {
-        let fields = Object.keys(weights[type]);
-        fields.forEach((field) => {
-            if(type == 'stringFacet'){
-                searchMetaStage['$searchMeta']['facet']['facets']['string_'+field]= {
-                    type : "string",
-                    path : field,
-                    numBuckets : parseInt(weights[type][field]),
-                }
-            }else if(type == "numberFacet"){
-                const boundaries = weights[type][field].split(',').map(w => parseInt(w));
-                searchMetaStage['$searchMeta']['facet']['facets']['number_'+field]= {
-                    type : "number",
-                    path : field,
-                    boundaries : boundaries,
-                    default: "other"
-                }
-            }else if(type == "dateFacet"){
-                const boundaries = weights[type][field].split(',').map(w => new Date(w));
-                searchMetaStage['$searchMeta']['facet']['facets']['date_'+field]= {
-                    type : "date",
-                    path : field,
-                    boundaries : boundaries,
-                    default: "other"
-                }
-            }else{
-                msg.push(`${type} is ignored. Field path '${field}' not used for search.`)
-            }
-        });
-    });
-
-    if(Object.keys(searchMetaStage['$searchMeta']['facet']['facets']).length>0){
-        return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
-    }else{
+    if(facets === undefined || isEmpty(facets)){
         return {searchStage:searchStage,msg:msg};
+    }else{
+        let facetTypes = Object.keys(facets).filter(type => ['stringFacet','numberFacet','dataFacet'].includes(type));
+        facetTypes.forEach((type) => {
+            let fields = Object.keys(facets[type]);
+            fields.forEach((field) => {
+                if(type == 'stringFacet'){
+                    searchMetaStage['$searchMeta']['facet']['facets']['string_'+field]= {
+                        type : "string",
+                        path : field,
+                        numBuckets : parseInt(facets[type][field]),
+                    }
+                }else if(type == "numberFacet"){
+                    const boundaries = facets[type][field].split(',').map(w => parseInt(w));
+                    searchMetaStage['$searchMeta']['facet']['facets']['number_'+field]= {
+                        type : "number",
+                        path : field,
+                        boundaries : boundaries,
+                        default: "other"
+                    }
+                }else if(type == "dateFacet"){
+                    const boundaries = facets[type][field].split(',').map(w => new Date(w));
+                    searchMetaStage['$searchMeta']['facet']['facets']['date_'+field]= {
+                        type : "date",
+                        path : field,
+                        boundaries : boundaries,
+                        default: "other"
+                    }
+                }else{
+                    msg.push(`${type} is ignored. Field path '${field}' not used for search.`)
+                }
+            });
+        });
+        return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
     }
+
+    
+
+    // if(Object.keys(searchMetaStage['$searchMeta']['facet']['facets']).length>0){
+    //     return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
+    // }else{
+    //     return {searchStage:searchStage,msg:msg};
+    // }
 }
 
 function buildFacetQueryFromFields(fields){
@@ -248,12 +255,13 @@ export default async function handler(req, res) {
                     if(req.body.weights){
                         const terms = req.query.terms? req.query.terms : "" ;
                         const weights = req.body.weights;
+                        const facets = req.body.facets;
                         const filters = req.body.filters? req.body.filters : null;
                         
                         const limit = req.query.rpp? parseInt(req.query.rpp) : 6;
                         const skip = req.query.page? parseInt(req.query.page-1)*limit : 0;
 
-                        const query = buildQueryFromWeights(terms,weights,filters);
+                        const query = buildQuery(terms,weights,facets,filters);
                         var searchStage = query.searchStage;
                         searchStage['$search']['index'] = index;
 

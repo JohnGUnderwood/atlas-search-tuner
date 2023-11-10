@@ -42,7 +42,7 @@ const Home = () => {
   const [finishedIndex, setFinishedIndex] = useState(null); //State hook for when an index finishes building
   
   const resetAppState = () =>{
-    setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
+    setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},facets:{},indexName:null,banners:{query:true,index:true}});
     setIndexes(null);
     setIndex({name:null,status:null,mappings:null,suggestedFields:null,error:null});
     setSearchResponse({status:null,results:null,facets:null,error:null});
@@ -68,7 +68,7 @@ const Home = () => {
 
   useEffect(()=>{
     if(!userSelectionState.indexName){
-      setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
+      setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},facets:{},indexName:null,banners:{query:true,index:true}});
       setIndex({status:null,name:null,fields:null,mappings:null,suggestedFields:null,error:null});
       setSearchResponse({status:null,results:null,facets:null,error:null});
       
