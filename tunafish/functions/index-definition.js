@@ -74,29 +74,29 @@ export function parseSearchIndex(mappings){
             if(mappings.fields[field].type=="document"){
                 parseField(mappings.fields[field].fields,field,newFields)
             }else if(mappings.fields[field].type=="stringFacet"){
-                newFields.facet.push({path:field,types:['String']})
+                newFields.facet.push({path:field,type:'String'})
             }else if(mappings.fields[field].type=="numberFacet"){
-                newFields.facet.push({path:field,types:['Number']})
+                newFields.facet.push({path:field,type:'Number'})
             }else if(mappings.fields[field].type=="dateFacet"){
-                newFields.facet.push({path:field,types:['Date']})
+                newFields.facet.push({path:field,type:'Date'})
             }else if(mappings.fields[field].type=="string"){
-                newFields.text.push({path:field,types:['String']})
+                newFields.text.push({path:field,type:'String'})
             }else if(mappings.fields[field].type=="autocomplete"){
-                newFields.autocomplete.push({path:field,types:['String']})
+                newFields.autocomplete.push({path:field,type:'String'})
             }
         }else{
             //Need to handle case when a field has multiple definitions
             for(const def of mappings.fields[field]){
                 if(def.type=="stringFacet"){
-                    newFields.facet.push({path:field,types:['String']})
+                    newFields.facet.push({path:field,type:'String'})
                 }else if(def.type=="numberFacet"){
-                    newFields.facet.push({path:field,types:['Number']})
+                    newFields.facet.push({path:field,type:'Number'})
                 }else if(def.type=="dateFacet"){
-                    newFields.facet.push({path:field,types:['Date']})
+                    newFields.facet.push({path:field,type:'Date'})
                 }else if(def.type=="string"){
-                    newFields.text.push({path:field,types:['String']})
+                    newFields.text.push({path:field,type:'String'})
                 }else if(def.type=="autocomplete"){
-                    newFields.autocomplete.push({path:field,types:['String']})
+                    newFields.autocomplete.push({path:field,type:'String'})
                 }
             }
         }
@@ -121,12 +121,12 @@ export function buildSearchIndex(fields){
     if(fields.facet.length>0){
         fields.facet.forEach((field) => {
             let mapping;
-            if(field.types.includes('String')){
+            if(field.type == 'String'){
                 mapping = [
                     {type:'stringFacet'},
                     {type:'string',analyzer:"lucene.keyword",indexOptions:"docs",norms:"omit"}
                 ]
-            }else if(field.types.includes('Number')){
+            }else if(field.type == 'Number'){
                 mapping = [
                     {type:'numberFacet'},
                     {type:'number'}

@@ -48,8 +48,6 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     }
 
     const handleQueryChange = (event) => {
-        console.log(event.target.value)
-        setSearchResponse({...searchResponseState,status:"loading"});
         setQuery({terms:event.target.value,filters:[]});
     };
     
@@ -61,10 +59,6 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     }
 
     const handleSearchClick = () => {
-        setSearchResponse({
-            ...searchResponseState,
-            status:'loading'
-        });
         setQuery({
             ...query,
             filters:[]

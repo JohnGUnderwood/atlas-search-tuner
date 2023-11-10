@@ -29,7 +29,7 @@ const Home = () => {
     indexName:null,
     banners:{query:true,index:true} // Whether banner messages are shown
   });
-  const [collectionState, setCollection] = useState({indexes:null,schema:null}); // indexes = Array( {name: , status, } )
+  const [indexes, setIndexes] = useState(null) // indexes = Array( {name: , status, } )
   const [indexState, setIndex] = useState({
     name:null,
     fields:null,
@@ -43,9 +43,10 @@ const Home = () => {
   
   const resetAppState = () =>{
     setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
-    setCollection({indexes:null,schema:null});
+    setIndexes(null);
     setIndex({name:null,status:null,mappings:null,suggestedFields:null,error:null});
     setSearchResponse({status:null,results:null,facets:null,error:null});
+    setSelectedTab(0);
   }
 
   useEffect(() => {
@@ -53,7 +54,7 @@ const Home = () => {
       resetAppState();
       const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
       fetchIndexes(connection).then(resp=>{
-          setCollection({...collectionState,indexes:resp.data})
+          setIndexes(resp.data)
           popToast(fetchingIndexes);
           pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
       })
@@ -69,18 +70,20 @@ const Home = () => {
     if(!userSelectionState.indexName){
       setUserSelection({fields:{facet:[],text:[],autocomplete:[]},weights:{},indexName:null,banners:{query:true,index:true}});
       setIndex({status:null,name:null,fields:null,mappings:null,suggestedFields:null,error:null});
-      // setIndexBuilder({name:null,status:null,mappings:null,suggestedFields:null,selectedFields:null,error:null});
       setSearchResponse({status:null,results:null,facets:null,error:null});
-      const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
-      fetchIndexes(connection).then(resp=>{
-          setCollection({...collectionState,indexes:resp.data})
-          popToast(fetchingIndexes);
-          pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
-      })
-      .catch(error=>{
-          popToast(fetchingIndexes)
-          pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
-      });
+      
+      if(connection.connected){
+        const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
+        fetchIndexes(connection).then(resp=>{
+            setIndexes(resp.data);
+            popToast(fetchingIndexes);
+            pushToast({variant:"success",title:"Search indexes",description:`Got ${resp.data.length} search indexes from ${connection.database}.${connection.collection}`}); 
+        })
+        .catch(error=>{
+            popToast(fetchingIndexes)
+            pushToast({timeout:0,variant:"warning",title:"Search failure",description:`Failed to get indexes from ${connection.database}.${connection.collection}. ${error}`})
+        });
+      }
 
     }else if(userSelectionState.indexName){
       const indexName = userSelectionState.indexName;
@@ -110,6 +113,7 @@ const Home = () => {
               getSchema(connection).then(resp => {
                 popToast(fetchingSchema);
                 pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
+                console.log("schema: ",resp.data);
                 const candidates = getCandidates(resp.data);
                 setIndex({
                   name:indexName,
@@ -209,7 +213,7 @@ const Home = () => {
       </AppBanner>
       <hr/>
       {connection.connected?
-        <IndexSelector indexes={collectionState.indexes}
+        <IndexSelector indexes={indexes}
           userSelection={userSelectionState}
           setUserSelection={setUserSelection}
           />
@@ -357,20 +361,20 @@ function fetchIndex(conn,searchIndex) {
 
 function getSchema(conn) {
   return new Promise((resolve,reject) => {
-    axios.post(`api/post/atlas-search/index/schema?`,{connection:conn})
+    axios.post(`api/post/atlas-search/index/schema`,{connection:conn})
       .then(response => resolve(response))
       .catch((error) => reject(error.response.data))
   });
 }
 
 function searchRequest(fields,indexName,conn) {
-  return new Promise((resolve) => {
+  return new Promise((resolve,reject) => {
       axios.post(`api/post/atlas-search/query`,
           { fields : fields, connection: conn, index:indexName},
           { headers : 'Content-Type: application/json'}
       ).then(response => resolve(response))
       .catch((error) => {
-          resolve(error.response.data);
+          reject(error.response.data);
       })
   });
 }

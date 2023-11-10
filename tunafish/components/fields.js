@@ -37,7 +37,7 @@ function SearchResultFields({doc,parent}){
                 :
                 <SearchResultFields key={`${parent}${child}${index}`} doc={doc[child]} parent={parent? parent+"."+child : child}></SearchResultFields>
             :
-            <Label key={`${parent}${index}`}>{parent? parent+"."+child : child}<Body>{doc[child]}</Body></Label>
+            <Label key={`${parent}${index}-label`}>{parent? parent+"."+child : child}<Body key={`${parent}${index}-body`}>{doc[child]}</Body></Label>
             }
             </>
         ))

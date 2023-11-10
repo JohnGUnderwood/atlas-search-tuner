@@ -69,7 +69,7 @@ function SelectFieldWeights({fields,weights,setWeights}){
                 {Object.keys(fields).filter(fieldType => fieldType=='facet').map(fieldType => (
                   <ComboboxGroup key={fieldType} label={fieldType}>
                     {fields[fieldType].map(field => (
-                      <ComboboxOption key={`${field.types[0].toLowerCase()}Facet_${field.path}`} value={`${field.types[0].toLowerCase()}Facet_${field.path}`} displayName={field.path}/>
+                      <ComboboxOption key={`${field.type.toLowerCase()}Facet_${field.path}`} value={`${field.type.toLowerCase()}Facet_${field.path}`} displayName={field.path}/>
                     ))}
                   </ComboboxGroup>
                 ))}

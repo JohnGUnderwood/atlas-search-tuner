@@ -16,7 +16,9 @@ function IndexSelector({indexes,userSelection,setUserSelection}){
     };
 
     const handleIndexChange = (name) => {
-        setUserSelection({...userSelection,indexName:name});
+        if(name){
+            setUserSelection({...userSelection,indexName:name});
+        }
     }
 
     useEffect(()=>{
@@ -43,27 +45,30 @@ function IndexSelector({indexes,userSelection,setUserSelection}){
                 alignItems: "end"
                 }}
             >
-                {indexes?<Combobox
-                    label="Search index to use"
-                    description='Pick an existing search index or create a new one by picking UI features you want in your search application'
-                    placeholder="Select index"
-                    onChange={handleIndexChange}
-                >
-                    <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
-                        <ComboboxGroup label="EXISTING INDEXES">
+                {indexes?
+                    <Combobox
+                        label="Search index to use"
+                        description='Pick an existing search index or create a new one by picking UI features you want in your search application'
+                        placeholder="Select index"
+                        onChange={handleIndexChange}
+                    >
+                        <ComboboxOption key="create-new" glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
+                        <ComboboxGroup key="indexes" label="EXISTING INDEXES">
                         {indexes.map(index => (
                             <ComboboxOption key={index.name} value={index.name} description={`${index.status}`}  onClick={()=>{setCreateNew(false)}}></ComboboxOption>
                         ))}
                         </ComboboxGroup>
-                </Combobox>:
-                <Combobox
-                    label="Search index to use"
-                    description='Pick an existing search index or create a new one by picking UI features you want in your search application'
-                    placeholder="Select index"
-                    onChange={handleIndexChange}
-                >
-                    <ComboboxOption glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
-                </Combobox>}
+                    </Combobox>
+                    :
+                    <Combobox
+                        label="Search index to use"
+                        description='Pick an existing search index or create a new one by picking UI features you want in your search application'
+                        placeholder="Select index"
+                        onChange={handleIndexChange}
+                    >
+                    <ComboboxOption key="create-new" glyph={<Icon glyph='PlusWithCircle'/>} value='' displayName="Create new index" onClick={()=>setCreateNew(true)}/>
+                    </Combobox>
+                }
                 {createNew?
                 <><TextInput label="Index name" description='Unique name for a search index' placeholder='newSearchIndex' value={name} onChange={(e)=>{handleNameInput(e.target.value)}}></TextInput>
                 <Button variant="primary" onClick={()=>{setUserSelection({...userSelection,indexName:name});setName(null);setCreateNew(false);}}>Configure</Button></>

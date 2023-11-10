@@ -171,12 +171,12 @@ function buildFacetQueryFromFields(fields){
     var facets = {}
     if(fields.facet.length>0){
         fields.facet.forEach(field => {
-            if(field.types.includes('String')){
+            if(field.type == 'String'){
                 facets[field.path] = {
                     type:"string",
                     path:field.path
                 }
-            }else if(field.types.includes('Number')){
+            }else if(field.type == 'Number'){
                 facets[field.path] = {
                     type:"number",
                     path:field.path,
