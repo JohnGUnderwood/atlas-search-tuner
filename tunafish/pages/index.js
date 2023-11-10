@@ -26,6 +26,7 @@ const Home = () => {
   const [userSelectionState, setUserSelection] = useState({
     fields:{facet:[],text:[],autocomplete:[]},
     weights:{},
+    facets:{},
     indexName:null,
     banners:{query:true,index:true} // Whether banner messages are shown
   });

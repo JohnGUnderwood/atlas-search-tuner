@@ -122,7 +122,7 @@ function buildQuery(terms,weights,facets,filters){
     var searchMetaStage = {
         $searchMeta:{
             facet:{
-                operator:JSON.parse(JSON.stringify(searchStage['$search'])),
+                operator:{...searchStage['$search']},
                 facets:{}
             }
         }
@@ -131,7 +131,7 @@ function buildQuery(terms,weights,facets,filters){
     if(facets === undefined || isEmpty(facets)){
         return {searchStage:searchStage,msg:msg};
     }else{
-        let facetTypes = Object.keys(facets).filter(type => ['stringFacet','numberFacet','dataFacet'].includes(type));
+        let facetTypes = Object.keys(facets).filter(type => ['stringFacet','numberFacet','dateFacet'].includes(type));
         facetTypes.forEach((type) => {
             let fields = Object.keys(facets[type]);
             fields.forEach((field) => {
@@ -206,12 +206,10 @@ function buildFacetQueryFromFields(fields){
     }
 }
 
-function buildProjectionFromWeights(weights){
+function buildProjection(weights,filters,facets){
     var projectStage = {$project:{_id:0}}
 
-    if(weights === undefined || isEmpty(weights)){
-        return projectStage;
-    }else{
+    if(weights != undefined && !isEmpty(weights)){
         const types = Object.keys(weights)
 
         types.forEach((type)=>{
@@ -220,9 +218,25 @@ function buildProjectionFromWeights(weights){
                 projectStage['$project'][field]=1
             })
         })
-
-        return projectStage;
     }
+    if(facets != undefined && !isEmpty(facets)){
+        const types = Object.keys(facets)
+
+        types.forEach((type)=>{
+            const fields = Object.keys(facets[type])
+            fields.forEach((field)=>{
+                projectStage['$project'][field]=1
+            })
+        })
+    }
+    if(filters != undefined && filters.length>0){
+        filters.forEach((filter)=>{
+            const field = filter.name.split('_').toSpliced(0,1).join('_')
+            projectStage['$project'][field]=1
+        })
+    }
+
+    return projectStage;
 
 }
 
@@ -265,7 +279,7 @@ export default async function handler(req, res) {
                         var searchStage = query.searchStage;
                         searchStage['$search']['index'] = index;
 
-                        const projectStage = buildProjectionFromWeights(weights);
+                        const projectStage = buildProjection(weights,filters,facets);
 
                         const pipeline = [
                             searchStage,

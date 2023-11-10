@@ -163,34 +163,14 @@ function SelectFieldWeights({fields,weights,setWeights,facets,setFacets}){
             <Combobox label="Choose Facets" size="small" multiselect={true} onChange={handleFacetToggle}>
               {Object.keys(fields).filter(fieldType => fieldType=='facet').map(fieldType => (
                 <ComboboxGroup key={fieldType} label={fieldType}>
-                  {fields[fieldType].map(field => (
+                  {/* TODO: handle date and number facets in future */}
+                  {fields[fieldType].filter(field=>field.type=="String").map(field => (
                     <ComboboxOption key={`${field.type.toLowerCase()}Facet_${field.path}`} value={`${field.type.toLowerCase()}Facet_${field.path}`} displayName={field.path}/>
                   ))}
                 </ComboboxGroup>
               ))}
             </Combobox>
             <div>
-              {Object.keys(facets).filter(type => type=="numberFacet").map(type => (
-                <>
-                  <Label key={type+"label"}>{type} fields</Label>
-                  <ul key={type} style={{paddingLeft:"10px"}}>
-                    {Object.keys(facets[type]).map(field => (
-                      <div key={type+'_'+field} style={{marginBottom:"5px"}}>
-                        <Label>
-                            {`${field} boundaries`}
-                            <input
-                              style={{verticalAlign:"bottom"}}
-                              key={type+'_'+field+'_box'}
-                              type="text"
-                              value={facets[type][field] || [0,100]} 
-                              onChange={(e) => handleFacetChange([type,field], e.target.value)}
-                            />
-                        </Label>
-                      </div>
-                    ))}
-                  </ul>
-                </>
-              ))}
               {Object.keys(facets).filter(type => type=="stringFacet").map(type => (
                 <>
                 <Label key={type+"label"}>{type} fields</Label>
@@ -212,11 +192,12 @@ function SelectFieldWeights({fields,weights,setWeights,facets,setFacets}){
                 </ul>
                 </>
               ))}
-              {Object.keys(facets).filter(type => type=="dateFacet").map(type => (
+              {/* TODO: Create some way to handle filtering on number and date facets */}
+              {/* {Object.keys(facets).filter(type => type=="dateFacet").map(type => (
                   <>
                   <Label key={type+"label"}>{type} fields</Label>
                   <ul key={type} style={{paddingLeft:"10px"}}>
-                    {Object.keys(weights[type]).map(field => (
+                    {Object.keys(facets[type]).map(field => (
                       <div key={type+'_'+field}>
                         <Label>
                             {`${field} boundaries`}
@@ -233,6 +214,28 @@ function SelectFieldWeights({fields,weights,setWeights,facets,setFacets}){
                   </ul>
                   </>
               ))}
+
+              {Object.keys(facets).filter(type => type=="numberFacet").map(type => (
+                <>
+                  <Label key={type+"label"}>{type} fields</Label>
+                  <ul key={type} style={{paddingLeft:"10px"}}>
+                    {Object.keys(facets[type]).map(field => (
+                      <div key={type+'_'+field} style={{marginBottom:"5px"}}>
+                        <Label>
+                            {`${field} boundaries`}
+                            <input
+                              style={{verticalAlign:"bottom"}}
+                              key={type+'_'+field+'_box'}
+                              type="text"
+                              value={facets[type][field] || [0,100]} 
+                              onChange={(e) => handleFacetChange([type,field], e.target.value)}
+                            />
+                        </Label>
+                      </div>
+                    ))}
+                  </ul>
+                </>
+              ))} */}
             </div>
         </div>
         

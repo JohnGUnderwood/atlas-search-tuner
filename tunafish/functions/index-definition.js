@@ -5,29 +5,29 @@ function parseField(fieldMappings,parent,newFields){
             if(fieldMappings[field].type=="document"){
                 parseField(fieldMappings[field].fields,`${parent}.${field}`,newFields)
             }else if(fieldMappings[field].type=="stringFacet"){
-                newFields.facet.push({path:`${parent}.${field}`,types:['String']})
+                newFields.facet.push({path:`${parent}.${field}`,type:'String'})
             }else if(fieldMappings[field].type=="numberFacet"){
-                newFields.facet.push({path:`${parent}.${field}`,types:['Number']})
+                newFields.facet.push({path:`${parent}.${field}`,type:'Number'})
             }else if(fieldMappings[field].type=="dateFacet"){
-                newFields.facet.push({path:`${parent}.${field}`,types:['Date']})
+                newFields.facet.push({path:`${parent}.${field}`,type:'Date'})
             }else if(fieldMappings[field].type=="string"){
-                newFields.text.push({path:`${parent}.${field}`,types:['String']})
+                newFields.text.push({path:`${parent}.${field}`,type:'String'})
             }else if(fieldMappings[field].type=="autocomplete"){
-                newFields.autocomplete.push({path:`${parent}.${field}`,types:['String']})
+                newFields.autocomplete.push({path:`${parent}.${field}`,type:'String'})
             }
         }else{
             //Need to handle case when a field has multiple definitions
             for(const def in fieldMappings[field]){
                 if(def.type=="stringFacet"){
-                    newFields.facet.push({path:`${parent}.${field}`,types:['String']})
+                    newFields.facet.push({path:`${parent}.${field}`,type:'String'})
                 }else if(def.type=="numberFacet"){
-                    newFields.facet.push({path:`${parent}.${field}`,types:['Number']})
+                    newFields.facet.push({path:`${parent}.${field}`,type:'Number'})
                 }else if(def.type=="dateFacet"){
-                    newFields.facet.push({path:`${parent}.${field}`,types:['Date']})
+                    newFields.facet.push({path:`${parent}.${field}`,type:'Date'})
                 }else if(def.type=="string"){
-                    newFields.text.push({path:`${parent}.${field}`,types:['String']})
+                    newFields.text.push({path:`${parent}.${field}`,type:'String'})
                 }else if(def.type=="autocomplete"){
-                    newFields.autocomplete.push({path:`${parent}.${field}`,types:['String']})
+                    newFields.autocomplete.push({path:`${parent}.${field}`,type:'String'})
                 }
             }
         }
@@ -62,7 +62,7 @@ export function parseSearchIndex(mappings){
     //      [
     //         {
     //             path: <full path to field>
-    //             types: [String/Number/Date/etc..]
+    //             type: String/Number/Date/etc..
     //         }
     //      ]
     // }
@@ -112,7 +112,7 @@ export function buildSearchIndex(fields){
     //      [
     //         {
     //             path: <full path to field>
-    //             types: [String/Number/Date/etc..]
+    //             type: String/Number/Date/etc..
     //         }
     //      ]
     // }

@@ -61,28 +61,19 @@ function evaluateField(field,sampleSize){
     var isAutocomplete = false;
     var types = [];
 
-    // Get the type for the field that has the highest probability
-    // const field = fieldTypes.sort(function(a,b){return b.probability-a.probability})[0]
+// Only suggesting string facets for the time being
+    if(field.count/sampleSize > ratioThreshold.facet && avgLenArrayVals(field.values) <= maxAvgCharLength.facet && field.bsonType=="String"){
+        isFacet = true;        
+    }
 
-    console.log("type: ",field);
-    console.log("ratio: ",field.count/sampleSize);
-    console.log("avg length: ",avgLenArrayVals(field.values));
+    if(field.count/sampleSize > ratioThreshold.autocomplete && avgLenArrayVals(field.values) <= maxAvgCharLength.autocomplete && field.bsonType=="String"){
+        isAutocomplete = true;
+    }
 
-    // if ('values' in field.type){
-        if(field.count/sampleSize > ratioThreshold.facet && avgLenArrayVals(field.values) <= maxAvgCharLength.facet){
-            isFacet = true;        
-        }
+    if(field.count/sampleSize > ratioThreshold.text && field.bsonType=="String"){
+        isText = true
+    }
 
-        if(field.count/sampleSize > ratioThreshold.autocomplete && avgLenArrayVals(field.values) <= maxAvgCharLength.autocomplete && field.bsonType=="String"){
-            isAutocomplete = true;
-        }
-
-        if(field.count/sampleSize > ratioThreshold.text && field.bsonType=="String"){
-            isText = true
-        }
-
-    // }
-    console.log({facet:isFacet,text:isText,autocomplete:isAutocomplete});
     return {facet:isFacet,text:isText,autocomplete:isAutocomplete}
 }
 
