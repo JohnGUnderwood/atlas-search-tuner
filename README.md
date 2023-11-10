@@ -59,6 +59,8 @@ Once the index defintion has been built up the user can click 'deploy'. This cre
 ### Query Tuner
 When an existing index is selected (or after a new index is built) the Query Tuner allows the user to create search queries by picking fields to search across and giving them different 'weights'. This shows the developer how to create a search query and how to apply simple boosting rules. The tuner parses the index defintion to find out which fields can be suggested for 'string' and for 'autocomplete' queries.
 
+The user can also select what facets to display and use them for filtering. Only string facets are currently supported.
+
 ![pick fields](https://github.com/JohnGUnderwood/atlas-search-tuner/tree/main/screenshots/tuner1.png) ![results](screenshot/tuner2.png)
 
-The user can now copy the generated query that is displayed in the UI and use it in their application or for further development in a tool such as Compass.
+The user can now copy the generated queries that are displayed in the UI and use it in their application or for further development in a tool such as Compass.
