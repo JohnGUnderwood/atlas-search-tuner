@@ -61,6 +61,6 @@ When an existing index is selected (or after a new index is built) the Query Tun
 
 The user can also select what facets to display and use them for filtering. Only string facets are currently supported.
 
-![pick fields](screenshots/tuner1.png) ![results](screenshot/tuner2.png)
+![pick fields](screenshots/tuner1.png) ![results](screenshots/tuner2.png)
 
 The user can now copy the generated queries that are displayed in the UI and use it in their application or for further development in a tool such as Compass.
