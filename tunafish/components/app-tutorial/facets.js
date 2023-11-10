@@ -22,47 +22,70 @@ function Facets({openModal,facetFields}){
             
                 
             {facetFields?
-                [...Array(2)].map((e, i) => (
-                    <div key={i}>
-
-                        <Tooltip key={`tt.${i}`}
-                            align="top"
-                            justify="start"
-                            trigger={<div style={{width:"45%",borderRadius:"5px",backgroundColor:palette.black}}>&nbsp;</div> }
-                            triggerEvent="hover"
-                            darkMode={true}
-                        >
-                        Filter category (e.g. 'country')
-                        </Tooltip>
-                    
-                    {[...Array(3)].map((e, j) => 
-                        <>
-                            <div key={`${i}.${j}`} style={{
-                            display: "grid",
-                            gridTemplateColumns: "50% 5%",
-                            gap: "10px",
-                            paddingTop:"10px",
-                            marginBottom:"15px"}}>
-                                <Tooltip key={`tt.${i}.${j}`}
-                                    align="top"
-                                    justify="start"
-                                    trigger={<div style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>}
-                                    triggerEvent="hover"
-                                    darkMode={true}
-                                >Filter value (e.g. 'USA')</Tooltip>
-                                <Tooltip key={`tt.c.${i}.${j}`}
-                                    align="top"
-                                    justify="start"
-                                    trigger={<div style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>}
-                                    triggerEvent="hover"
-                                    darkMode={true}
-                                >Value count (e.g. '253')</Tooltip>
-                            </div>
-                        </>
-                    )}
+                <>
+                <div key="0">
+                    <div key="facet0" style={{width:"45%",borderRadius:"5px",backgroundColor:palette.black}}>&nbsp;</div>
+                    <div key="bucket0" style={{
+                        display: "grid",
+                        gridTemplateColumns: "50% 5%",
+                        gap: "10px",
+                        paddingTop:"10px",
+                        marginBottom:"15px"}}>
+                        <div key="val0" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
+                        <div key="count0" style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>
                     </div>
-                ))
-                :<></>}
+                    <div key="bucket1" style={{
+                        display: "grid",
+                        gridTemplateColumns: "50% 5%",
+                        gap: "10px",
+                        paddingTop:"10px",
+                        marginBottom:"15px"}}>
+                        <div key="val1" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
+                        <div key="count1" style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>
+                    </div>
+                    <div key="bucket2" style={{
+                        display: "grid",
+                        gridTemplateColumns: "50% 5%",
+                        gap: "10px",
+                        paddingTop:"10px",
+                        marginBottom:"15px"}}>
+                        <div key="val2" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
+                        <div key="count2" style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>
+                    </div>
+                </div>
+                <div key="1">
+                    <div key="facet1" style={{width:"45%",borderRadius:"5px",backgroundColor:palette.black}}>&nbsp;</div>
+                    <div key="bucket3" style={{
+                        display: "grid",
+                        gridTemplateColumns: "50% 5%",
+                        gap: "10px",
+                        paddingTop:"10px",
+                        marginBottom:"15px"}}>
+                        <div key="val3" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
+                        <div key="count3" style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>
+                    </div>
+                    <div key="bucket4" style={{
+                        display: "grid",
+                        gridTemplateColumns: "50% 5%",
+                        gap: "10px",
+                        paddingTop:"10px",
+                        marginBottom:"15px"}}>
+                        <div key="val4" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
+                        <div key="count4" style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>
+                    </div>
+                    <div key="bucket5" style={{
+                        display: "grid",
+                        gridTemplateColumns: "50% 5%",
+                        gap: "10px",
+                        paddingTop:"10px",
+                        marginBottom:"15px"}}>
+                        <div key="val5" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</div>
+                        <div key="count5" style={{borderRadius:"5px", backgroundColor:palette.blue.light1}}>&nbsp;</div>
+                    </div>
+                </div>
+                </>
+                :<></>
+            }
         </Card>
     )
 }

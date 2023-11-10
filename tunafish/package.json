@@ -8,7 +8,7 @@
   "dependencies": {
     "@leafygreen-ui/banner": "^7.0.15",
     "@leafygreen-ui/button": "^21.0.7",
-    "@leafygreen-ui/callout": "^9.0.16",
+    "@leafygreen-ui/callout": "^9.0.17",
     "@leafygreen-ui/card": "^10.0.5",
     "@leafygreen-ui/chip": "^1.0.0",
     "@leafygreen-ui/code": "^14.2.16",

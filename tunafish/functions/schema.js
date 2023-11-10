@@ -30,96 +30,85 @@ function mergeObjectsArrays(obj1,obj2){
     return {...obj2,...newObj}
 }
 
-function getAllFields(fields,input){
+function getAllFields(output,fields){
 
-    if('path' in input){
-        const path = input.path.join('.');
-        fields = addArrayValToObj(fields,path,input)
-    }
+    fields.forEach(field => {
+        const type = field.types.sort(function(a,b){b.probability-a.probability})[0]; // Get most probable type
+        if(type.name != "Array" && type.name != "Document"){
+            output.push(type);
+        }else if(type.name=="Array"){
+            var arrayType = type.types.sort(function(a,b){b.probability-a.probability})[0];
+            arrayType = {...arrayType,averageLength:type.averageLength,arrayCount:type.count}
+            output.push(arrayType);
+        }else if(type.name=="Document"){
+            getAllFields(output,type.fields);
+        }
+    });
     
-    if('fields' in  input){
-        input.fields.forEach(field => {
-            fields = getAllFields(fields,field)
-        })
-    }else if('types' in input){
-        input.types.forEach(type => {
-            fields = getAllFields(fields,type)
-        })
-    }
-    
-    return fields;
+    return output;
 }
 
-function evaluateField(fieldTypes,count){
+function evaluateField(field,sampleSize){
     // What proportion of the sample must have the field to satisfy type
     const ratioThreshold = {facet:0.6,text:0.6,autocomplete:0.6};
     // Threshold for uniqueness, facets should have a low number of unique values, text can be high
-    const uniqueThreshold = {facet:0.05,text:1,autocomplete:1};
+    // const uniqueThreshold = {facet:0.05,text:1,autocomplete:1};
     // Check if the average character length of the field values make it viable as a facet or autocomplete
-    const maxAvgCharLength = {facet:25,autocomplete:50};
+    const maxAvgCharLength = {facet:25,autocomplete:100};
     
     var isFacet = false;
     var isText = false;
     var isAutocomplete = false;
     var types = [];
 
-    fieldTypes.forEach(type => {
-        if ('values' in type){
-            if(type.count > ratioThreshold.facet*count && type.unique < uniqueThreshold.facet*type.count && avgLenArrayVals(type.values) <= maxAvgCharLength.facet){
-                isFacet = true 
-                types.push(type.name)          
-            }else if(type.count > ratioThreshold.text && type.unique < uniqueThreshold.text*type.count && type.name=="String"){
-                isText = true
-                if(!types.includes(type.name)){
-                    types.push(type.name)
-                }
-            }
+// Only suggesting string facets for the time being
+    if(field.count/sampleSize > ratioThreshold.facet && avgLenArrayVals(field.values) <= maxAvgCharLength.facet && field.bsonType=="String"){
+        isFacet = true;        
+    }
 
-            if(type.count > ratioThreshold.autocomplete*count && type.unique < uniqueThreshold.autocomplete*type.count && avgLenArrayVals(type.values) <= maxAvgCharLength.autocomplete && type.name=="String"){
-                isAutocomplete = true;
-                if(!types.includes(type.name)){
-                    types.push(type.name)
-                }
-            }
+    if(field.count/sampleSize > ratioThreshold.autocomplete && avgLenArrayVals(field.values) <= maxAvgCharLength.autocomplete && field.bsonType=="String"){
+        isAutocomplete = true;
+    }
 
-        }
-        
-    })
-    return {facet:isFacet,text:isText,autocomplete:isAutocomplete,types:types}
+    if(field.count/sampleSize > ratioThreshold.text && field.bsonType=="String"){
+        isText = true
+    }
+
+    return {facet:isFacet,text:isText,autocomplete:isAutocomplete}
 }
 
-function evaluateEmbeddingField(fieldTypes){    
+function evaluateEmbeddingField(field){    
     //If all the sampled values for an array field are the same length then this is likely an embedding field
     //Also check that the length is longer than 100
     var isEmbedding = false;
-    fieldTypes.forEach(type => {
-        if (type.bsonType == 'Array' && type.averageLength > 100 && type.totalCount == type.averageLength*type.count){
-            isEmbedding = true;
-        }
-    })
+    if (field.bsonType == 'Number' && field.averageLength > 100 && field.count == field.averageLength*field.arrayCount){
+        isEmbedding = true;
+    }
     return isEmbedding
 }
 
 export function getCandidates(schema){
-    const fieldTypes = getAllFields({},schema);
+    const fields = getAllFields([],schema.fields);
     const facet = []
     const text = []
     const autocomplete = []
 
-    Object.keys(fieldTypes).forEach(path => {
-        if(!evaluateEmbeddingField(fieldTypes[path])){
-            const evaluate = evaluateField(fieldTypes[path],schema.count);
+    console.log("fieldTypes: ",fields);
+    fields.forEach(field => {
+        if(!evaluateEmbeddingField(field)){
+            console.log("processing field:",field.path.join('.'))
+            const evaluate = evaluateField(field,schema.count);
             if(evaluate.facet){
-                facet.push({path:path,types:evaluate.types})
+                facet.push({path:field.path.join('.'),type:field.bsonType})
             }
             if(evaluate.text){
-                text.push({path:path,types:evaluate.types})
+                text.push({path:field.path.join('.'),type:field.bsonType})
             }
             if(evaluate.autocomplete){
-                autocomplete.push({path:path,types:evaluate.types})
+                autocomplete.push({path:field.path.join('.'),type:field.bsonType})
             }
         }
-    })
+    });
 
     return {facet:facet,text:text,autocomplete:autocomplete};
 }

@@ -1,4 +1,6 @@
 import { SearchInput } from "@leafygreen-ui/search-input"
+import Button from '@leafygreen-ui/button';
+import Icon from "@leafygreen-ui/icon";
 
 function SearchBar({openModal,autocompleteFields}){
     const modalContent = {
@@ -14,9 +16,7 @@ function SearchBar({openModal,autocompleteFields}){
         type:"autocomplete"
     }
     return (
-        <div onClick={() => openModal(modalContent)} style={{cursor: "pointer", paddingTop:"10px", display:"flex", justifyContent:"center"}}>
-            <div style={{width:"70%"}}><SearchInput onChange="" aria-label="some label"></SearchInput></div>
-        </div>
+        <span style={{display:"grid",gridTemplateColumns:"70% 110px", alignItems:"center", marginLeft:"15%"}}><SearchInput style={{marginRight:"5px"}} size="small" onChange="" aria-label="some label"></SearchInput><Button size="xsmall" leftGlyph={<Icon glyph='Wrench'/>} variant="default" onClick={() => openModal(modalContent)} >CONFIGURE</Button></span>
     )
 }
 export default SearchBar;
