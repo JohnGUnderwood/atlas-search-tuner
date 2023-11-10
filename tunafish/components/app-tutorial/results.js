@@ -6,8 +6,8 @@ import Icon from "@leafygreen-ui/icon";
 
 function Results({openModal,textFields}){
     const modalContent = {
-        title:"Show search results / Set query path",
-        content:`You will want to search within specific attributes/fields and display them to your users.
+        title:"Set query path",
+        content:`Your users will want to search within specific attributes/fields.
         When you configure your search index and queries you will specify how document fields should be treated.
         `,
         links:[
@@ -19,39 +19,61 @@ function Results({openModal,textFields}){
     }
 
     return (
-        <>
-        <Card>
+        <Card style={{marginRight:"10px"}}>
             <span style={{display:"grid",gridTemplateColumns:"40% 110px", alignItems:"end", marginBottom:"10px"}}><Subtitle>Search Results</Subtitle><Button size="xsmall" leftGlyph={<Icon glyph='Wrench'/>} variant="default" onClick={() => openModal(modalContent)} >CONFIGURE</Button></span>
-            {textFields?[...Array(2)].map((e, i) => (
-                <Card key={i} style={{marginBottom:"20px"}}>
-                    <Subtitle key={`${i}title`} style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black,marginBottom:"15px"}}>&nbsp;</Subtitle>
-                    <div key={`${i}desc`} weight="regular" as="div">
-                    {[...Array(3)].map((e, j) => 
-                        <>
-                            <p key={`${i}${j}`} style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
-                        </>
-                    )}
+            {textFields?
+                <>
+                <Card key="result0" style={{marginBottom:"20px"}}>
+                    <Subtitle key="title0" style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black,marginBottom:"15px"}}>&nbsp;</Subtitle>
+                    <div key="desc0" weight="regular" as="div">
+                        <p key="desc00" style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
+                        <p key="desc01" style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
                     </div>
-                    {[...Array(3)].map((e, j) => 
-                        <>
-                            <p key={`${i}${j}`} style={{
-                            display: "grid",
-                            gridTemplateColumns: "15% 30%",
-                            gap: "10px",
-                            paddingTop:"10px"}}>
-                                <span key={`${i}${j}_0`} style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
-                                <span key={`${i}${j}_1`} style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
-                            </p>
-                            {/* <br/> */}
-                        </>
-                    )}
+                    <p key="field0" style={{
+                    display: "grid",
+                    gridTemplateColumns: "15% 30%",
+                    gap: "10px",
+                    paddingTop:"10px"}}>
+                        <span key="val0" style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
+                        <span key="val1" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
+                    </p>
+                    <p key="field1" style={{
+                    display: "grid",
+                    gridTemplateColumns: "15% 30%",
+                    gap: "10px",
+                    paddingTop:"10px"}}>
+                        <span key="val2" style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
+                        <span key="val3" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
+                    </p>
                 </Card>
-                ))
-            :<></>
+                <Card key="result1" style={{marginBottom:"20px"}}>
+                    <Subtitle key="title1" style={{width:"65%",borderRadius:"5px",backgroundColor:palette.black,marginBottom:"15px"}}>&nbsp;</Subtitle>
+                    <div key="desc1" weight="regular" as="div">
+                        <p key="desc10" style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
+                        <p key="desc11" style={{borderRadius:"5px", backgroundColor:palette.gray.base, width:"80%"}}>&nbsp;</p>
+                    </div>
+                    <p key="field2" style={{
+                    display: "grid",
+                    gridTemplateColumns: "15% 30%",
+                    gap: "10px",
+                    paddingTop:"10px"}}>
+                        <span key="val4" style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
+                        <span key="val5" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
+                    </p>
+                    <p key="field3" style={{
+                    display: "grid",
+                    gridTemplateColumns: "15% 30%",
+                    gap: "10px",
+                    paddingTop:"10px"}}>
+                        <span key="val6" style={{borderRadius:"5px", backgroundColor:palette.black}}>&nbsp;</span>
+                        <span key="val7" style={{borderRadius:"5px", backgroundColor:palette.gray.base}}>&nbsp;</span>
+                    </p>
+                </Card>
+                </>
+                :<></>
             }
             
         </Card>
-      </>
     )
 }
 

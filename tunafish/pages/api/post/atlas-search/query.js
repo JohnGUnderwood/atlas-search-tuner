@@ -10,7 +10,7 @@ function isEmpty(obj) {
     return true;
   }
 
-function buildQueryFromWeights(terms,weights,filters){
+function buildQuery(terms,weights,facets,filters){
     var msg = [];
     if(weights === undefined || isEmpty(weights)){
         msg.push('No field weights defined. Searched using wildcard')
@@ -30,7 +30,8 @@ function buildQueryFromWeights(terms,weights,filters){
     var searchStage = {
       $search:{
         compound:{
-          must:[],
+          should:[],
+          minimumShouldMatch:1
         }
       }
     }
@@ -85,7 +86,7 @@ function buildQueryFromWeights(terms,weights,filters){
                 finalWeight = -1/weight
             }
             if(type == 'text'){
-                searchStage['$search']['compound']['must'].push(
+                searchStage['$search']['compound']['should'].push(
                     {
                         text:{
                             query:terms,
@@ -95,7 +96,7 @@ function buildQueryFromWeights(terms,weights,filters){
                     }
                 )
             }else if(type == "autocomplete"){
-                searchStage['$search']['compound']['must'].push(
+                searchStage['$search']['compound']['should'].push(
                     {
                         autocomplete:{
                             query:terms,
@@ -110,7 +111,7 @@ function buildQueryFromWeights(terms,weights,filters){
         });
     });
 
-    if(searchStage['$search']['compound']['must'].length == 0){
+    if(searchStage['$search']['compound']['should'].length == 0){
         if(terms != ""){
             searchStage['$search'].compound.must.push({text:{query:terms,path:{wildcard:"*"}}})
         }else{
@@ -121,88 +122,68 @@ function buildQueryFromWeights(terms,weights,filters){
     var searchMetaStage = {
         $searchMeta:{
             facet:{
-                operator:JSON.parse(JSON.stringify(searchStage['$search'])),
+                operator:{...searchStage['$search']},
                 facets:{}
             }
         }
     }
 
-    let facetTypes = Object.keys(weights).filter(type => ['stringFacet','numberFacet','dataFacet'].includes(type));
-    facetTypes.forEach((type) => {
-        let fields = Object.keys(weights[type]);
-        fields.forEach((field) => {
-            if(type == 'stringFacet'){
-                searchMetaStage['$searchMeta']['facet']['facets']['string_'+field]= {
-                    type : "string",
-                    path : field,
-                    numBuckets : parseInt(weights[type][field]),
-                }
-            }else if(type == "numberFacet"){
-                const boundaries = weights[type][field].split(',').map(w => parseInt(w));
-                searchMetaStage['$searchMeta']['facet']['facets']['number_'+field]= {
-                    type : "number",
-                    path : field,
-                    boundaries : boundaries,
-                    default: "other"
-                }
-            }else if(type == "dateFacet"){
-                const boundaries = weights[type][field].split(',').map(w => new Date(w));
-                searchMetaStage['$searchMeta']['facet']['facets']['date_'+field]= {
-                    type : "date",
-                    path : field,
-                    boundaries : boundaries,
-                    default: "other"
-                }
-            }else{
-                msg.push(`${type} is ignored. Field path '${field}' not used for search.`)
-            }
-        });
-    });
-
-    if(Object.keys(searchMetaStage['$searchMeta']['facet']['facets']).length>0){
-        return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
-    }else{
+    if(facets === undefined || isEmpty(facets)){
         return {searchStage:searchStage,msg:msg};
+    }else{
+        let facetTypes = Object.keys(facets).filter(type => ['stringFacet','numberFacet','dateFacet'].includes(type));
+        facetTypes.forEach((type) => {
+            let fields = Object.keys(facets[type]);
+            fields.forEach((field) => {
+                if(type == 'stringFacet'){
+                    searchMetaStage['$searchMeta']['facet']['facets']['string_'+field]= {
+                        type : "string",
+                        path : field,
+                        numBuckets : parseInt(facets[type][field]),
+                    }
+                }else if(type == "numberFacet"){
+                    const boundaries = facets[type][field].split(',').map(w => parseInt(w));
+                    searchMetaStage['$searchMeta']['facet']['facets']['number_'+field]= {
+                        type : "number",
+                        path : field,
+                        boundaries : boundaries,
+                        default: "other"
+                    }
+                }else if(type == "dateFacet"){
+                    const boundaries = facets[type][field].split(',').map(w => new Date(w));
+                    searchMetaStage['$searchMeta']['facet']['facets']['date_'+field]= {
+                        type : "date",
+                        path : field,
+                        boundaries : boundaries,
+                        default: "other"
+                    }
+                }else{
+                    msg.push(`${type} is ignored. Field path '${field}' not used for search.`)
+                }
+            });
+        });
+        return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
     }
+
+    
+
+    // if(Object.keys(searchMetaStage['$searchMeta']['facet']['facets']).length>0){
+    //     return {searchStage:searchStage,searchMetaStage:searchMetaStage,msg:msg};
+    // }else{
+    //     return {searchStage:searchStage,msg:msg};
+    // }
 }
 
 function buildFacetQueryFromFields(fields){
-    var searchOperator = {
-        compound:{
-            should:[ ]
-        }
-    }
-
-    let types = Object.keys(fields);
-
-    if(!types.includes('string')){
-        searchOperator.compound.should.push({wildcard:{query:"*",path:{wildcard:"*"},allowAnalyzedField: true}})
-    }else{
-        searchOperator = {
-            compound:{
-                should:[ 
-                    {
-                        wildcard:{
-                            query:"*",
-                            path:fields.string.map(field => {field.path}),
-                            allowAnalyzedField: true
-                        }
-                    }
-                ]
-            }
-        }
-    }
-
     var facets = {}
-
-    if(types.includes('facet')){
+    if(fields.facet.length>0){
         fields.facet.forEach(field => {
-            if(field.types.includes('String')){
+            if(field.type == 'String'){
                 facets[field.path] = {
                     type:"string",
                     path:field.path
                 }
-            }else if(field.types.includes('Number')){
+            }else if(field.type == 'Number'){
                 facets[field.path] = {
                     type:"number",
                     path:field.path,
@@ -211,25 +192,24 @@ function buildFacetQueryFromFields(fields){
                 }
             }
         })
-    }
-
-    const searchStage = {
-        $searchMeta:{
-            facet:{
-                operator:searchOperator,
-                facets:facets
+        const searchStage = {
+            $searchMeta:{
+                facet:{
+                    operator:{wildcard:{query:"*",path:{wildcard:"*"},allowAnalyzedField: true}},
+                    facets:facets
+                }
             }
         }
+        return searchStage;
+    }else{
+        return null;
     }
-    return searchStage;
 }
 
-function buildProjectionFromWeights(weights){
+function buildProjection(weights,filters,facets){
     var projectStage = {$project:{_id:0}}
 
-    if(weights === undefined || isEmpty(weights)){
-        return projectStage;
-    }else{
+    if(weights != undefined && !isEmpty(weights)){
         const types = Object.keys(weights)
 
         types.forEach((type)=>{
@@ -238,9 +218,25 @@ function buildProjectionFromWeights(weights){
                 projectStage['$project'][field]=1
             })
         })
-
-        return projectStage;
     }
+    if(facets != undefined && !isEmpty(facets)){
+        const types = Object.keys(facets)
+
+        types.forEach((type)=>{
+            const fields = Object.keys(facets[type])
+            fields.forEach((field)=>{
+                projectStage['$project'][field]=1
+            })
+        })
+    }
+    if(filters != undefined && filters.length>0){
+        filters.forEach((filter)=>{
+            const field = filter.name.split('_').toSpliced(0,1).join('_')
+            projectStage['$project'][field]=1
+        })
+    }
+
+    return projectStage;
 
 }
 
@@ -273,16 +269,17 @@ export default async function handler(req, res) {
                     if(req.body.weights){
                         const terms = req.query.terms? req.query.terms : "" ;
                         const weights = req.body.weights;
+                        const facets = req.body.facets;
                         const filters = req.body.filters? req.body.filters : null;
                         
                         const limit = req.query.rpp? parseInt(req.query.rpp) : 6;
                         const skip = req.query.page? parseInt(req.query.page-1)*limit : 0;
 
-                        const query = buildQueryFromWeights(terms,weights,filters);
+                        const query = buildQuery(terms,weights,facets,filters);
                         var searchStage = query.searchStage;
                         searchStage['$search']['index'] = index;
 
-                        const projectStage = buildProjectionFromWeights(weights);
+                        const projectStage = buildProjection(weights,filters,facets);
 
                         const pipeline = [
                             searchStage,
@@ -306,7 +303,11 @@ export default async function handler(req, res) {
                                 var searchMetaStage = query.searchMetaStage;
                                 searchMetaStage['$searchMeta']['index']=index;
                                 const facets = await getResults(client,req.body.connection,[searchMetaStage])
-                                res.status(200).json({results:response,facets:facets[0].facet,query:query});
+                                if(facets.length>0){
+                                    res.status(200).json({results:response,facets:facets[0].facet,query:query});
+                                }else{
+                                    res.status(200).json({results:response,facets:[],query:query});
+                                }
                             }else{
                                 res.status(200).json({results:response,query:query});
                             }
@@ -316,42 +317,30 @@ export default async function handler(req, res) {
 
                     }else if(req.body.fields){
                         const fields = req.body.fields;
-                        if(req.body.type == "facet"){
-                            const searchStage = buildFacetQueryFromFields(fields);
-                            searchStage['$searchMeta']['index'] = index;
-                            const pipeline = [
-                                searchStage
-                                ]
-                            console.log(JSON.stringify(pipeline))
-                            try{
-                                const response = await getResults(client,req.body.connection,pipeline)
-                                res.status(200).json(response[0]);
-                            }catch(error){
-                                console.log(JSON.stringify(pipeline))
-                                res.status(405).send(error);
+
+                        const textFields = fields.text.map(field => field.path);
+                        const autocompleteFields = fields.autocomplete.map(field => field.path);
+                        const fieldPaths = textFields.concat(autocompleteFields);
+                        var projectStage = {$project:{"_id":1}};
+                        fieldPaths.forEach(field => {
+                            projectStage['$project'][field]=1;
+                        });
+
+                        const facetStage = buildFacetQueryFromFields(fields);
+
+                        var facets = [];
+                        var results = [];
+                        try{
+                            if(facetStage){
+                                facetStage['$searchMeta']['index'] = index;
+                                facets = await getResults(client,req.body.connection,[facetStage]);
+                                facets = facets[0].facet
                             }
-                        }else if(req.body.type == "text"){
-                            const projectStage = {$project:{"_id":1}};
-                            const textFields = fields.text.map(field => field.path);
-                            const autocompleteFields = fields.autocomplete.map(field => field.path);
-                            const fieldPaths = textFields.concat(autocompleteFields);
-                            fieldPaths.forEach(field => {
-                                projectStage['$project'][field]=1;
-                            });
-                            const pipeline =[
-                                {$limit:1},
-                                projectStage,
-                            ];
-                            console.log(JSON.stringify(pipeline))
-                            try{
-                                const response = await getResults(client,req.body.connection,pipeline)
-                                res.status(200).json(response);
-                            }catch(error){
-                                console.log(JSON.stringify(pipeline))
-                                res.status(405).send(error);
-                            }
-                        }else{
-                            res.status(400).send(`Request body 'type' parameter missing, undefined, or not allowed`);
+                            results = await getResults(client,req.body.connection,[{$limit:1},projectStage])
+                        }catch(error){
+                            res.status(405).send(error);
+                        }finally{
+                            res.status(200).json({facets:facets,results:results});
                         }
 
                     }else{
