@@ -53,7 +53,7 @@ const Home = () => {
   useEffect(() => {
     if(connection.connected){
       resetAppState();
-      const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
+      const fetchingIndexes = pushToast({timeout:0,variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
       fetchIndexes(connection).then(resp=>{
           setIndexes(resp.data)
           popToast(fetchingIndexes);
@@ -74,7 +74,7 @@ const Home = () => {
       setSearchResponse({status:null,results:null,facets:null,error:null});
       
       if(connection.connected){
-        const fetchingIndexes = pushToast({variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
+        const fetchingIndexes = pushToast({timeout:0,variant:"progress",title:"Fetching indexes",description:`Fetching search indexes for ${connection.database}.${connection.collection}`}); 
         fetchIndexes(connection).then(resp=>{
             setIndexes(resp.data);
             popToast(fetchingIndexes);
@@ -110,7 +110,7 @@ const Home = () => {
               }
           }else{
               //Index does not already exist so we set status to 'NEW'
-              const fetchingSchema = pushToast({variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
+              const fetchingSchema = pushToast({timeout:0,variant:"progress",title:"Getting schema",description:`Analyzing data from ${connection.database}.${connection.collection}`}); 
               getSchema(connection).then(resp => {
                 popToast(fetchingSchema);
                 pushToast({variant:"success",title:"Schema",description:`Finished analyzing ${connection.database}.${connection.collection} schema`}); 
@@ -166,6 +166,13 @@ const Home = () => {
   useEffect(() =>{
     if(finishedIndex && finishedIndex.name == indexState.name){
       setIndex({...indexState,status:finishedIndex.status,mappings:finishedIndex.mappings});
+      setIndexes([...indexes,{name:finishedIndex.name,status:finishedIndex.status}]);
+      setIndexes(indexes => indexes.map(index => {
+        if(index.name == finishedIndex.name){
+          index.status = finishedIndex.status;
+        }
+        return index;
+      }))
     }
   },[finishedIndex])
 
@@ -185,6 +192,7 @@ const Home = () => {
       ...indexState,
       status:'PENDING'
     });
+    setIndexes([...indexes,{name:indexState.name,status:'PENDING'}]);
     postIndexMappings(indexState.mappings,userSelectionState.indexName,connection)
         .then(resp=> {
             getIndexStatus(userSelectionState.indexName);
