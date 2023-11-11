@@ -3,11 +3,7 @@ name: Publish Docker Image
 on:
   release:
     types: [published]
-  # Could run this on any tag being pushed matching a glob patter.
-  # push:
-  #   tags:
-  #     - 'v*.*.*'
-
+    
 env:
   APPFOLDER: tunafish
   DOCKERHUB_NAMESPACE: johnunderwood197
@@ -40,5 +36,4 @@ jobs:
           file: ./${{ env.APPFOLDER }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          # tags: ${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
