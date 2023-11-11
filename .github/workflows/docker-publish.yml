@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
 
 env:
-  REGISTRY: docker.io
+  REGISTRY: johnunderwood197
   APP: tunafish
   DOCKERHUB_USERNAME: johnunderwood197
 
