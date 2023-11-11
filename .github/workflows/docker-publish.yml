@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: tunafish
+  APP: tunafish
   DOCKERHUB_USERNAME: johnunderwood197
 
 jobs:
@@ -31,6 +31,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: ./${{ env.APP }}
+          file: ./${{ env.APP }}/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ env.APP }}:${{ github.ref_name }}
