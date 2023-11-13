@@ -42,6 +42,7 @@ function QueryTuner({connection, userSelection, setUserSelection, index}){
     },[query]);
 
     const setWeights = (weights) =>{
+        console.log(weights)
         setUserSelection({
             ...userSelection,
             weights:weights
