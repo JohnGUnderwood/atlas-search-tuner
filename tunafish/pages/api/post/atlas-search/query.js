@@ -12,28 +12,34 @@ function isEmpty(obj) {
 
 function buildQuery(terms,weights,facets,filters){
     var msg = [];
+    var searchStage;
     if(weights === undefined || isEmpty(weights)){
         msg.push('No field weights defined. Searched using wildcard')
-        return {
-            searchStage:{
-                $search:{
-                    text:{
-                        query:terms,
-                        path:{wildcard:"*"}
-                    }
+        searchStage = {
+            $search:{
+                compound:{
+                    should:[
+                        {
+                            text:{
+                                query:terms,
+                                path:{wildcard:"*"}
+                            }
+                        }
+                    ],
+                    minimumShouldMatch:1
                 }
-            },
-            msg:msg
-        };
-    }
-
-    var searchStage = {
-      $search:{
-        compound:{
-          should:[],
-          minimumShouldMatch:1
+                
+            }
         }
-      }
+    }else{
+        searchStage = {
+            $search:{
+              compound:{
+                should:[],
+                minimumShouldMatch:1
+              }
+            }
+          }
     }
 
     if(filters){
@@ -131,30 +137,31 @@ function buildQuery(terms,weights,facets,filters){
     if(facets === undefined || isEmpty(facets)){
         return {searchStage:searchStage,msg:msg};
     }else{
-        let facetTypes = Object.keys(facets).filter(type => ['stringFacet','numberFacet','dateFacet'].includes(type));
+        // TODO: Add capability to handle 'numberFacet' and 'dateFacet'.
+        let facetTypes = Object.keys(facets).filter(type => ['stringFacet'].includes(type));
         facetTypes.forEach((type) => {
             let fields = Object.keys(facets[type]);
             fields.forEach((field) => {
                 if(type == 'stringFacet'){
                     searchMetaStage['$searchMeta']['facet']['facets']['string_'+field]= {
-                        type : "string",
-                        path : field,
-                        numBuckets : parseInt(facets[type][field]),
+                        type: "string",
+                        path: field,
+                        numBuckets: parseInt(facets[type][field]),
                     }
                 }else if(type == "numberFacet"){
                     const boundaries = facets[type][field].split(',').map(w => parseInt(w));
                     searchMetaStage['$searchMeta']['facet']['facets']['number_'+field]= {
-                        type : "number",
-                        path : field,
-                        boundaries : boundaries,
+                        type: "number",
+                        path: field,
+                        boundaries: boundaries,
                         default: "other"
                     }
                 }else if(type == "dateFacet"){
                     const boundaries = facets[type][field].split(',').map(w => new Date(w));
                     searchMetaStage['$searchMeta']['facet']['facets']['date_'+field]= {
-                        type : "date",
-                        path : field,
-                        boundaries : boundaries,
+                        type: "date",
+                        path: field,
+                        boundaries: boundaries,
                         default: "other"
                     }
                 }else{

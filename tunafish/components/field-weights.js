@@ -7,11 +7,11 @@ function SelectFieldWeights({fields,weights,setWeights,facets,setFacets}){
     const handleSliderChange = (weight, newValue) => {
       const [type,field] = weight;
       var typeWeights = weights[type];
-      typeWeights[field] = newValue
-      setWeights(weights => ({
+      typeWeights[field] = newValue;
+      setWeights({
         ...weights,
         [type]: typeWeights
-      }));
+      });
     };
 
     const handleFacetChange = (facet, newValue) => {
@@ -19,10 +19,10 @@ function SelectFieldWeights({fields,weights,setWeights,facets,setFacets}){
       console.log(facet,newValue);
       var typeSettings = facets[type];
       typeSettings[field] = newValue
-      setFacets(facets => ({
+      setFacets({
         ...facets,
         [type]: typeSettings
-      }));
+      });
     };
     
     const handleFieldToggle = (value) => {
