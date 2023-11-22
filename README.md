@@ -50,7 +50,7 @@ When the user opts to create a new index the app uses the [mongodb-schema packag
 
 The tutorial covers three sections: facets, autocomplete (search bar), and search fields (results). When the user clicks on a section they are presented with some helpful information, links to documention, and a dropdown of suggestd fields that they can select to create a new search index defintion.
 
-![modal1](screenshots/modal1.png) ![mappings](https://github.com/JohnGUnderwood/atlas-search-tuner/blob/main/screenshots/mappings.png?raw=true)
+![modal1](https://github.com/JohnGUnderwood/atlas-search-tuner/blob/main/screenshots/modal1.png?raw=true) ![mappings](https://github.com/JohnGUnderwood/atlas-search-tuner/blob/main/screenshots/mappings.png?raw=true)
 
 Once the index defintion has been built up the user can click 'deploy'. This creates the new index definition. The App waits for the new index to be built and when it completes will retrieve some data to show what the user has configured. This is the same view that is shown when the user selects an already existing index.
 
