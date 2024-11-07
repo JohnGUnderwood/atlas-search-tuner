@@ -17,7 +17,7 @@ async function checkCollections(client,db,coll){
   }
 
   async function connect(connection){
-    const uri = connection.uri;
+    const uri = `mongodb+srv://${encodeURIComponent(connection.user)}:${encodeURIComponent(connection.password)}@${connection.cluster}`
     const db = connection.database;
     const coll = connection.collection
     try{
