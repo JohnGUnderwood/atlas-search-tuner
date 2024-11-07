@@ -22,7 +22,7 @@ import { buildSearchIndex } from '../functions/index-definition'
 const Home = () => {
   const { pushToast, popToast } = useToast();
   const [selectedTab, setSelectedTab] = useState(0);
-  const [connection, setConnection] = useState({connected:false,uri:null,database:null,collection:null});
+  const [connection, setConnection] = useState({connected:false,user:null,password:null,database:null,collection:null});
   const [userSelectionState, setUserSelection] = useState({
     fields:{facet:[],text:[],autocomplete:[]},
     weights:{},

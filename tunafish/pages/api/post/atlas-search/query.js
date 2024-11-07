@@ -265,11 +265,11 @@ export default async function handler(req, res) {
         console.log(`Request body missing connection parameter`)
         res.status(400).send(`Request body missing connection parameter`);
     }else{
-        if(!req.body.connection.uri || !req.body.connection.database|| !req.body.connection.collection || !req.body.index){
+        if(!req.body.connection.cluster || !req.body.connection.user || !req.body.connection.password || !req.body.connection.database|| !req.body.connection.collection || !req.body.index){
             res.status(400).json({error:"Missing Connection Details!"});
         }else{
             try{
-                const client = new MongoClient(req.body.connection.uri);
+                const client = new MongoClient(`mongodb+srv://${encodeURIComponent(req.body.connection.user)}:${encodeURIComponent(req.body.connection.password)}@${req.body.connection.cluster}`);
                 try{
                     const index = req.body.index;
 
