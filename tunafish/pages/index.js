@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import AppBanner from '../components/banner';
 import MongoDBConnection from '../components/connection';
 import QueryTuner from '../components/query-tuner';
+import QueryRanker from '../components/query-ranker';
 import IndexBuilder from '../components/app-tutorial/index-builder';
 import IndexSelector from '../components/index-selector';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
@@ -303,6 +304,10 @@ const Home = () => {
             <Tab name="Query Tuner">
               {userSelectionState.banners.query?<Banner style={{marginTop:"10px"}} dismissible={true} onClose={()=>{setUserSelection({...userSelectionState,banners:{...userSelectionState.banners,query:false}})}} variant='info'>Not seeing the results you expect? <a style={{cursor:"pointer"}} onClick={() =>setSelectedTab(0)}>Check your index definition!</a></Banner>:<></>}
               <QueryTuner connection={connection} userSelection={userSelectionState} setUserSelection={setUserSelection} index={indexState}/>
+            </Tab>
+            <Tab name="Query Ranker">
+              {userSelectionState.banners.query?<Banner style={{marginTop:"10px"}} dismissible={true} onClose={()=>{setUserSelection({...userSelectionState,banners:{...userSelectionState.banners,query:false}})}} variant='info'><a style={{cursor:"pointer"}} onClick={() =>setSelectedTab(1)}>Switch to Query Tuner</a> to modify the query.</Banner>:<></>}
+              <QueryRanker connection={connection} userSelection={userSelectionState}></QueryRanker>
             </Tab>
           </Tabs>
           :<></>

@@ -214,7 +214,7 @@ function buildFacetQueryFromFields(fields){
 }
 
 function buildProjection(weights,filters,facets){
-    var projectStage = {$project:{_id:0}}
+    var projectStage = {$project:{}}
 
     if(weights != undefined && !isEmpty(weights)){
         const types = Object.keys(weights)
@@ -225,6 +225,8 @@ function buildProjection(weights,filters,facets){
                 projectStage['$project'][field]=1
             })
         })
+    }else{
+        projectStage = {$project:{___:0}}
     }
     if(facets != undefined && !isEmpty(facets)){
         const types = Object.keys(facets)
@@ -281,10 +283,24 @@ export default async function handler(req, res) {
                         
                         const limit = req.query.rpp? parseInt(req.query.rpp) : 6;
                         const skip = req.query.page? parseInt(req.query.page-1)*limit : 0;
+                        const token = req.query.token? req.query.token : null;
+                        const paginate = req.query.paginate? req.query.paginate : null;
 
                         const query = buildQuery(terms,weights,facets,filters);
                         var searchStage = query.searchStage;
                         searchStage['$search']['index'] = index;
+                        searchStage['$search']['sort'] = {score: {$meta: "searchScore"}, "_id": 1}
+                        searchStage['$search']['count'] = {type: "total"}
+
+                        if(token && paginate){
+                            switch(paginate){
+                                case 'prev':
+                                    searchStage['$search']['searchBefore'] = token;
+                                    break;
+                                case 'next':
+                                    searchStage['$search']['searchAfter'] = token;
+                            }
+                        }
 
                         const projectStage = buildProjection(weights,filters,facets);
 
@@ -293,7 +309,9 @@ export default async function handler(req, res) {
                             projectStage,
                             {
                                 $addFields:{
-                                    score: { $round : [ {$meta:"searchScore"}, 4 ] }
+                                    score: { $round : [ {$meta:"searchScore"}, 4 ] },
+                                    searchSequenceToken: {$meta: "searchSequenceToken"},
+                                    // count: {$divide"$$SEARCH_META.count.total"
                                 }
                             },
                             {

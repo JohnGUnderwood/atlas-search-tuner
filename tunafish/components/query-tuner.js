@@ -6,7 +6,6 @@ import { SearchInput, SearchResult } from '@leafygreen-ui/search-input';
 import Card from '@leafygreen-ui/card';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import { H3, Subtitle, Description, InlineCode } from '@leafygreen-ui/typography';
-import SaveQuery from './save-query';
 import Button from '@leafygreen-ui/button';
 import Banner from '@leafygreen-ui/banner';
 import Code from '@leafygreen-ui/code';
